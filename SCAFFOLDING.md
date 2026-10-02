@@ -2,7 +2,7 @@
 
 This repo is empty on purpose. The folders are here so everyone knows where their code goes, and you (with your AI assistant) write everything inside them.
 
-First read [docs/00-vision.md](docs/00-vision.md) for the idea, then your lane in [docs/lanes/](docs/lanes/).
+New here? Do [docs/ONBOARDING.md](docs/ONBOARDING.md) first to get set up. Then read [docs/00-vision.md](docs/00-vision.md) for the idea, and your lane in [docs/lanes/](docs/lanes/).
 
 ## The big picture
 
@@ -16,7 +16,7 @@ Motherlode has three parts, like a restaurant:
 
 | Folder | What goes in it | Who |
 |---|---|---|
-| `docs/` | The idea (`00-vision.md`) and one short page per lane (`lanes/`) | everyone |
+| `docs/` | Getting set up (`ONBOARDING.md`), the idea (`00-vision.md`) and one short page per lane (`lanes/`) | everyone |
 | `packages/shared/` | The "contract": the shapes of data every lane agrees on (a miner, a vein, a message…) | everyone |
 | `packages/fuzzy/` | A small fuzzy-logic library ("hunger is 0.8 high") | Lane 2 |
 | `packages/agents/` | The miners' brains, personalities and social life | Lane 2 |
