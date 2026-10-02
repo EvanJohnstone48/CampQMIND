@@ -54,7 +54,6 @@ We don't have AWARE licenses or real plant data yet, and we won't for a while. I
 | The operator who makes the calls | You, playing god, make the calls |
 | Explanations for the operator | The narrator explaining what's happening |
 
-**The best part:** at a real plant you can never be 100% sure what caused something. In our simulation you can. We can re-run the world with one cause removed and see if the effect disappears. That means we can actually **check whether our narrator's explanations are right**, which is the hardest thing the Woodgrove brief asks for.
 
 ### What carries over to the real project
 
@@ -63,13 +62,11 @@ Even though nothing here touches AWARE, almost everything you learn does:
 | What you'll use here | Why it matters for AWARE-NG |
 |---|---|
 | **Git and GitHub** | It's how we'll work all year: branches, pull requests and reviews in the AWARE-NG repo. |
-| **Fuzzy logic** | It's literally what AWARE uses to control the mills. |
+| **Fuzzy logic** | It's  what AWARE uses to control the mills. |
 | **Working with AI models (Gemini)** | The real framework uses language models to write explanations, so you'll learn how to keep them grounded and stop them from making things up. |
 | **Time-series data and events** | Plant data is mostly numbers over time plus alarms. Our sim produces the same kind of data. |
 | **Checking explanations against the truth** | "How do we know the explanation is right?" is the core research question for March. |
-| **Building with AI coding assistants** | It's how a small team ships a real prototype in the time we have. |
-
-⚠️ **The Woodgrove brief is confidential.** Read it, but don't share it outside the team, and never put it (or any client material or plant data) in GitHub.
+| **Building with AI coding assistants** | I'll be dropping lots of ball here|
 
 ---
 
