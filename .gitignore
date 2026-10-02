@@ -6,3 +6,6 @@ runs/*
 *.log
 .DS_Store
 .vite/
+
+# Confidential client material (Woodgrove brief) - never commit
+Conversational Intelligence for Advanced Process Control Systems in Mining Operations.pdf
