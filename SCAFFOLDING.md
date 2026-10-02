@@ -2,21 +2,21 @@
 
 This repo is empty on purpose. The folders are here so everyone knows where their code goes, and you (with your AI assistant) write everything inside them.
 
-New here? Do [docs/ONBOARDING.md](docs/ONBOARDING.md) first to get set up. Then read [docs/00-vision.md](docs/00-vision.md) for the idea, and your lane in [docs/lanes/](docs/lanes/).
+First read [docs/00-vision.md](docs/00-vision.md) for the idea, then well each pick a lane in [docs/lanes/](docs/lanes/).
 
 ## The big picture
 
 Motherlode has three parts, like a restaurant:
 
-- **`packages/`** is the kitchen: the logic of the world. No screens, just code that works out what happens.
+- **`packages/`** is the kitchen: the logic of the world.
 - **`apps/server/`** is the waiter: it runs the clock and carries updates between the world and the browser.
-- **`apps/web/`** is the dining room: the website you look at and click on.
+- **`apps/web/`** is the dining room: the website you look at and click on ;)
 
 ## The folders
 
 | Folder | What goes in it | Who |
 |---|---|---|
-| `docs/` | Getting set up (`ONBOARDING.md`), the idea (`00-vision.md`) and one short page per lane (`lanes/`) | everyone |
+| `docs/` | The idea (`00-vision.md`) and one short page per lane (`lanes/`) | everyone |
 | `packages/shared/` | The "contract": the shapes of data every lane agrees on (a miner, a vein, a message…) | everyone |
 | `packages/fuzzy/` | A small fuzzy-logic library ("hunger is 0.8 high") | Lane 2 |
 | `packages/agents/` | The miners' brains, personalities and social life | Lane 2 |
@@ -33,7 +33,7 @@ Motherlode has three parts, like a restaurant:
 | `apps/web/src/features/society/` | The friendship and guild network | Lane 2 |
 | `apps/web/src/features/agents/` | The list of miners | Lane 2 |
 | `apps/web/src/features/narrator/` | The explanation cards and the accuracy audit | Lane 3 |
-| `fixtures/` | Recordings of a run, so you can test the website without the real server | Lane 1 |
+| `fixtures/` | Recordings of a run,to test the website without the real server | Lane 1 |
 | `runs/` | Logs from real runs (not saved to git) | — |
 | `status/` | Each lane's quick "done / doing / blocked" notes | everyone |
 
