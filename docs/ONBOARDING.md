@@ -33,14 +33,6 @@ From what we've seen, the control logic itself runs on Python-based tooling.
 
 **The problem Woodgrove gave us:** AWARE makes good decisions, but it doesn't explain them. When something changes, say the SAG mill's power draw suddenly drops, an operator has to dig through charts, alarms and rule logs to work out why. And there's rarely just one cause: it could be harder ore, a different feed rate, less water, worn liners, or all of them at once.
 
-**Our job this year (October → conference in March):** design a framework that turns all of that into **plain-language explanations** an operator can trust. That means explanations that:
-
-- only say things backed by real evidence, and point to that evidence
-- keep *what we saw* separate from *what we think caused it* and *what you could do*
-- say how confident they are, and admit when they don't know
-- only speak up when it's actually worth it, so people aren't buried in alerts
-- **never take control away from the humans.** The AI explains; people decide.
-
 ### Why build a mining game first?
 
 We don't have AWARE licenses or real plant data yet, and we won't for a while. Instead of waiting, we're building a fun proof of concept with **the same shape of problem**: Motherlode.
@@ -92,20 +84,14 @@ Think of these as the workshop tools. You install them once, and they're used fo
 | **Node.js** (22 or newer) | Lets JavaScript/TypeScript run on your computer, not just inside a browser. Our server and tools run on it. | <https://nodejs.org>, pick the **LTS** version | `node --version` should print `v22…` or higher |
 | **pnpm** | A downloader for code libraries (other people's code we reuse, like the 3D engine). It also runs our project's shortcut commands. | In a terminal: `npm install -g pnpm@9` | `pnpm --version` |
 | **VS Code** | The code editor, basically Word for code. It shows your files, highlights mistakes and has a terminal built in. | <https://code.visualstudio.com> | It opens |
-| **A browser** | To look at the app we build. | Chrome, Edge or Firefox | — |
+| **A browser** | To look at the app we build. | Chrome, Edge or Firefox or Zen (sleeper ball) | — |
 
 **What does "check it worked" mean?** Each check command asks the tool for its version number. If you get a number back, it's installed and your terminal can find it.
 
 ### Your AI coding assistant
 
-We're all building with AI help, so you need one installed and signed in. Use whatever the team agrees on, for example **Claude Code** (<https://claude.com/claude-code>). Once you have the repo (step 5), test it by opening the folder and asking *"What is this project and which folder is mine?"*
+Use whatever you want can install with IDE extension or in your terminal :)
 
-### Optional VS Code extensions
-
-- **GitLens** shows who changed each line and when.
-- **Error Lens** shows mistakes right on the line instead of hiding them in a panel.
-
----
 
 ## 4. Get access
 
@@ -132,7 +118,7 @@ cd CampQMIND
 
 Now open it in VS Code: *File → Open Folder…* and pick `CampQMIND`. The panel on the left shows all the folders. [SCAFFOLDING.md](../SCAFFOLDING.md) explains what each one is for.
 
-**Heads up:** the repo is mostly empty folders on purpose. Building what goes in them is the job. There's nothing to "run" yet. Getting the project set up so it runs is part of the first hour.
+**Heads up:** i scaffoleded this repo to give us some general sturcture itths mostly empty folders. There's nothing to "run" yet. Getting the project set up so it runs is part of the first hour.
 
 ---
 
@@ -145,9 +131,7 @@ Some settings are secret, like API keys. They go in a file called `.env` that **
 
 **Why the example file?** `.env.example` is the template everyone can see. It lists *which* settings exist, but with the secret values left blank. You fill in your own copy.
 
-**Never** paste your key into code, chat, Discord or GitHub. If one leaks, delete it in AI Studio and make a new one. This is the same rule we'll follow all year for anything sensitive.
-
-The free Gemini tier has a daily limit on how many requests you can make, so test with a few AI miners, not hundreds.
+The free Gemini tier has a daily limit on how many requests you can make, so test with a few AI miners, not hundreds (thats why we got fuzzy vs llm)
 
 ---
 
@@ -192,7 +176,7 @@ git switch -c lane-2/hunger-rules    ← make a new branch for ONE small thing
 (build it with your AI assistant, and check it works)
 git add .                            ← pick all your changes to be saved
 git commit -m "Lane 2: hunger rules" ← save a snapshot with a short note
-git push -u origin lane-2/hunger-rules   ← upload your branch to GitHub
+git push -u origin lane-2/hunger-rules   ← upload your branch to GitHub and get approval from EJ or RG
 ```
 
 Then on GitHub, click **Compare & pull request**, say what you changed and why, and ask a teammate to look at it. Once it's approved, merge it.
@@ -200,12 +184,6 @@ Then on GitHub, click **Compare & pull request**, say what you changed and why, 
 **In plain words:** *pull* = download, *branch* = your own workspace, *commit* = save a snapshot, *push* = upload, *PR* = "please check this and add it in". Keep each branch small so it's easy to review.
 
 **Never work directly on `main`.** If `git pull` or a merge says there's a **conflict**, that means two people changed the same lines. Don't panic. Ask your AI assistant "help me resolve this merge conflict", or grab a teammate.
-
-**A good first message for your AI assistant** (change the lane):
-
-> I'm working on **Lane 2 (Minds & Society)** of the Motherlode project. Read `SCAFFOLDING.md`, `docs/00-vision.md` and `docs/lanes/lane-2-minds-society.md`. Only change files in my lane's folders. Explain what you're doing in simple terms as you go, because I'm new to coding.
-
----
 
 ## 10. You're ready when…
 
@@ -215,4 +193,4 @@ Then on GitHub, click **Compare & pull request**, say what you changed and why, 
 - [ ] You know what a branch and a pull request are
 - [ ] You know your lane, your folders, and the first feature you'll build
 
-See you at kickoff. ⛏
+See yall tommorow :)
