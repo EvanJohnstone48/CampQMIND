@@ -22,7 +22,7 @@ Motherlode has three parts, like a restaurant:
 | `packages/agents/` | The miners' brains, personalities and social life | Lane 2 |
 | `packages/agents/src/llm/` | Talking to the AI model (Gemini) | Lane 2 |
 | `packages/sim/` | The world engine: map, rounds, mining, market, bank | Lane 1 |
-| `packages/narrator/` | Watches the data and explains it in plain words, plus the Oracle | Lane 3 |
+| `packages/narrator/` | Watches the data and explains it in plain words | Lane 3 |
 | `apps/server/` | Runs the world live and talks to the browser | Lane 1 |
 | `apps/cli/` | Runs the world from the terminal, no browser needed | Lane 1 |
 | `apps/web/src/net/` | The live connection to the server | Lane 4 |
