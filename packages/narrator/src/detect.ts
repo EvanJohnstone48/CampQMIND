@@ -12,6 +12,8 @@ export interface Development {
   usual: number;
   /** Average of the last two shifts. */
   now: number;
+  /** Normal ups and downs (standard deviation) before the change. */
+  spread: number;
   /** |deviation| of `now`: how many "normal wobbles" away from usual. */
   size: number;
   /** "clear": outside the normal range. "strong": far outside it. */
@@ -76,6 +78,7 @@ export function detect(history: RoundSnapshot[], metric: string, settings: Narra
       round: history[n - 1].round,
       usual,
       now,
+      spread,
       size,
       strength: size >= STRONG_DEVIATION ? "strong" : "clear",
       stillMoving: (sign > 0 ? trend.rising : trend.falling) >= 0.5,

@@ -93,6 +93,10 @@ Each module is designed as a deep module: a small, stable interface hiding most 
 11. **Lane 1 adapter.** Maps Lane 1's real round output onto `RoundSnapshot`. Written once Lane 1's shape is known. All Lane 1-specific knowledge stays here.
 12. **Narrator panel (web).** Takes cards as props and renders a list with a headline, the statement kinds as labelled sections, a confidence badge, the round, and an expandable evidence section. It also has an empty "nothing notable" state. It has no network code of its own.
 
+### Levels of detail
+
+Each card carries three levels, all built from the same evidence package. **Level 1 · Glance** is one line: how much it changed, and the root cause with its confidence word. **Level 2 · Why** has the observed facts, the direct cause, the chain back to the root cause, the uncertainty and any suggestion. **Level 3 · Deep** adds the change's size next to normal noise, every suspect considered, the confidence rule that applied, and the evidence. The panel has a 1/2/3 switch for all cards, and each card has a "More detail" button for that card alone. Chains only link metrics through configured `knownLinks`. The badge shows the weakest link.
+
 ### Contracts
 
 - **`Card`**: id, round, topic, headline, statement sections by kind, confidence word, priority, evidence references, and `writtenBy` (template | gemini).

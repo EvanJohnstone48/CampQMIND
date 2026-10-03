@@ -35,5 +35,8 @@ for (const name of names.length ? names : SCENARIO_NAMES) {
 
 function print(card: Card) {
   console.log(`\n   [shift ${card.round}] ${card.headline}   (cause: ${card.confidence}, ${card.writtenBy})`);
-  for (const s of card.statements) console.log(`     ${s.kind.padEnd(9)} ${s.text}`);
+  for (const level of [1, 2, 3] as const) {
+    console.log(`     ── level ${level}`);
+    for (const s of card.statements.filter((s) => s.level === level)) console.log(`     ${s.kind.padEnd(9)} ${s.text}`);
+  }
 }

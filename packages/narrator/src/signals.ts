@@ -12,6 +12,9 @@ import { shoulder, triangle } from "./fuzzy.js";
 //   ~2.75+     rarely happens by chance                 "outside its normal ups and downs"
 //   4+         far beyond anything seen recently        "far outside its normal ups and downs"
 
+/** Deviation where fuzzy "low"/"high" reach 0.5: below this, a change is treated as noise. */
+export const NOISE_LIMIT = 2.75;
+
 export interface Baseline {
   /** Average over the baseline window. */
   usual: number;

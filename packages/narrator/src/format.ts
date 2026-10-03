@@ -18,6 +18,8 @@ export function formatSlot(slot: Slot): string {
       return `${Math.round(v)}`;
     case "number":
       return `${roundForReading(v)}`;
+    case "times":
+      return `${parseFloat(v.toFixed(2))}`;
   }
 }
 

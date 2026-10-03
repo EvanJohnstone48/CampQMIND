@@ -39,7 +39,7 @@ export async function reword(pkg: EvidencePackage, client: LlmClient, timeoutMs:
 
   const problems = [
     ...checkRewording(pkg.headline, parsed.headline, pkg.slots),
-    ...pkg.statements.flatMap((s, i) => checkRewording(s.template, parsed.statements[i], pkg.slots)),
+    ...pkg.statements.flatMap((s, i) => checkRewording(s.text, parsed.statements[i], pkg.slots)),
   ];
   return problems.length ? { ok: false, problems } : { ok: true, ...parsed };
 }
@@ -51,7 +51,7 @@ function buildPrompt(pkg: EvidencePackage): string {
   }
   const input = {
     headline: pkg.headline,
-    statements: pkg.statements.map((s) => ({ kind: s.kind, text: s.template })),
+    statements: pkg.statements.map((s) => ({ kind: s.kind, text: s.text })),
     placeholders: names,
   };
   return `You reword short explanation cards for a mining simulation so they read clearly and simply.

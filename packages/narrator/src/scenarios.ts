@@ -2,7 +2,17 @@
 // against a known truth before the real sim exists. This is test and demo data,
 // not a model of the economy: each scenario just bends one metric on purpose.
 
-import { CONFIDENCE_SCALE, type Card, type Confidence, type Direction, type KnownEffect, type NarratorConfig, type RoundSnapshot, type WorldEvent } from "./types.js";
+import {
+  CONFIDENCE_SCALE,
+  type Card,
+  type Confidence,
+  type Direction,
+  type KnownEffect,
+  type KnownLink,
+  type NarratorConfig,
+  type RoundSnapshot,
+  type WorldEvent,
+} from "./types.js";
 import type { Narrator } from "./narrator.js";
 
 export interface ScenarioTruth {
@@ -13,6 +23,10 @@ export interface ScenarioTruth {
   confidence: Confidence;
   /** The shift the planted change begins. */
   changeStarts: number;
+  /** For a chain: the in-between metric the card must trace through. */
+  via?: string;
+  /** Other metrics that are meant to change too (not false alarms). */
+  alsoChanges?: string[];
 }
 
 export interface Scenario {
@@ -47,9 +61,10 @@ interface Plan {
   name: string;
   description: string;
   events: WorldEvent[];
-  /** Relative change to a metric, ramping in over 4 shifts from `from`. */
-  effect?: { metric: string; from: number; change: number };
+  /** Relative changes to metrics, each ramping in over 4 shifts from `from`. */
+  effects?: { metric: string; from: number; change: number }[];
   knownEffects?: KnownEffect[];
+  knownLinks?: KnownLink[];
   truth: ScenarioTruth | null;
 }
 
@@ -58,7 +73,7 @@ const PLANS: Plan[] = [
     name: "gold-rush",
     description: "The Overseer starts a gold rush at shift 20; the gold price falls 30% from shift 21.",
     events: [{ kind: "goldRush", round: 20, source: "overseer" }],
-    effect: { metric: "goldPrice", from: 21, change: -0.3 },
+    effects: [{ metric: "goldPrice", from: 21, change: -0.3 }],
     knownEffects: [{ event: "goldRush", metric: "goldPrice", direction: "down" }],
     truth: { metric: "goldPrice", direction: "down", acceptableCauses: ["goldRush"], confidence: "likely", changeStarts: 21 },
   },
@@ -69,7 +84,7 @@ const PLANS: Plan[] = [
       { kind: "earthquake", round: 19, source: "world" },
       { kind: "caveIn", round: 20, source: "world" },
     ],
-    effect: { metric: "shareMining", from: 21, change: -0.25 },
+    effects: [{ metric: "shareMining", from: 21, change: -0.25 }],
     knownEffects: [
       { event: "earthquake", metric: "shareMining", direction: "down" },
       { event: "caveIn", metric: "shareMining", direction: "down" },
@@ -80,15 +95,35 @@ const PLANS: Plan[] = [
     name: "coincidence",
     description: "A lightning strike at shift 21 that is NOT known to affect hunger, and hunger rises from shift 22 anyway.",
     events: [{ kind: "lightning", round: 21, source: "overseer" }],
-    effect: { metric: "shareStarving", from: 22, change: 0.6 },
+    effects: [{ metric: "shareStarving", from: 22, change: 0.6 }],
     truth: { metric: "shareStarving", direction: "up", acceptableCauses: ["lightning"], confidence: "possibly", changeStarts: 22 },
   },
   {
     name: "unexplained",
     description: "The copper price rises from shift 22 with nothing recorded before it.",
     events: [],
-    effect: { metric: "copperPrice", from: 22, change: 0.25 },
+    effects: [{ metric: "copperPrice", from: 22, change: 0.25 }],
     truth: { metric: "copperPrice", direction: "up", acceptableCauses: [], confidence: "unclear", changeStarts: 22 },
+  },
+  {
+    name: "chain",
+    description: "A gold rush at shift 20 pulls more miners into the mines (from shift 21), and the extra gold then lowers the gold price (from shift 23).",
+    events: [{ kind: "goldRush", round: 20, source: "overseer" }],
+    effects: [
+      { metric: "shareMining", from: 21, change: 0.25 },
+      { metric: "goldPrice", from: 23, change: -0.3 },
+    ],
+    knownEffects: [{ event: "goldRush", metric: "shareMining", direction: "up" }],
+    knownLinks: [{ from: "shareMining", fromDirection: "up", to: "goldPrice", direction: "down" }],
+    truth: {
+      metric: "goldPrice",
+      direction: "down",
+      acceptableCauses: ["goldRush"],
+      confidence: "likely",
+      changeStarts: 23,
+      via: "shareMining",
+      alsoChanges: ["shareMining"],
+    },
   },
   {
     name: "quiet",
@@ -110,9 +145,8 @@ export function makeScenario(name: string, seed = "demo"): Scenario {
     const metrics: Record<string, number> = {};
     for (const [metric, { usual, noise }] of Object.entries(BASELINES)) {
       let value = usual;
-      const e = plan.effect;
-      if (e && e.metric === metric && round >= e.from) {
-        value *= 1 + e.change * Math.min(1, (round - e.from + 1) / 4);
+      for (const e of plan.effects ?? []) {
+        if (e.metric === metric && round >= e.from) value *= 1 + e.change * Math.min(1, (round - e.from + 1) / 4);
       }
       metrics[metric] = value + rand() * noise;
     }
@@ -122,7 +156,7 @@ export function makeScenario(name: string, seed = "demo"): Scenario {
   return {
     name: plan.name,
     description: plan.description,
-    config: { ...BASE_CONFIG, knownEffects: plan.knownEffects ?? [] },
+    config: { ...BASE_CONFIG, knownEffects: plan.knownEffects ?? [], knownLinks: plan.knownLinks ?? [] },
     history,
     truth: plan.truth,
   };
@@ -145,7 +179,8 @@ export async function playScenario(scenario: Scenario, narrator: Narrator): Prom
  */
 export function scoreScenario(scenario: Scenario, cards: Card[]) {
   const truth = scenario.truth;
-  const falseAlarms = cards.filter((c) => !truth || c.topic !== truth.metric).length;
+  const expected = truth ? [truth.metric, ...(truth.alsoChanges ?? [])] : [];
+  const falseAlarms = cards.filter((c) => !expected.includes(c.topic)).length;
   if (!truth) return { verdict: falseAlarms ? ("wrong" as const) : ("right" as const), overclaimed: false, falseAlarms };
 
   const onTopic = cards.filter((c) => c.topic === truth.metric);
@@ -159,7 +194,8 @@ export function scoreScenario(scenario: Scenario, cards: Card[]) {
     Math.abs(first.startRound - truth.changeStarts) <= 1 &&
     first.confidence === truth.confidence &&
     named.length === truth.acceptableCauses.length &&
-    truth.acceptableCauses.every((c) => named.includes(c));
+    truth.acceptableCauses.every((c) => named.includes(c)) &&
+    (!truth.via || first.evidence.some((e) => e.type === "metric" && e.metric === truth.via));
   return { verdict: right ? ("right" as const) : ("wrong" as const), overclaimed, falseAlarms };
 }
 

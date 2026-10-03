@@ -50,7 +50,7 @@ export function checkRewording(original: string, rewritten: string, slots: Recor
 /** Checks a whole package's templates: no stray digits, every placeholder filled. Used on template output too. */
 export function checkPackage(pkg: EvidencePackage): string[] {
   const problems: string[] = [];
-  for (const template of [pkg.headline, ...pkg.statements.map((s) => s.template)]) {
+  for (const template of [pkg.headline, ...pkg.statements.map((s) => s.text)]) {
     if (/\d/.test(template.replace(/\{\{\w+\}\}/g, ""))) problems.push(`template has a raw number: ${template}`);
     for (const name of slotNames(template)) {
       if (!pkg.slots[name]) problems.push(`template uses unknown placeholder {{${name}}}`);

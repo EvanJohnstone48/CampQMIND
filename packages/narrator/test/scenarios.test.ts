@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyze, checkPackage, createNarrator, makeScenario, playScenario, scoreScenario, SCENARIO_NAMES } from "../src/index.js";
+import { analyze, checkPackage, CONFIDENCE_SCALE, createNarrator, makeScenario, playScenario, scoreScenario, SCENARIO_NAMES } from "../src/index.js";
 import { formatSlot } from "../src/format.js";
 
 const SEEDS = 40;
@@ -48,8 +48,11 @@ describe("every card", () => {
       const s = makeScenario(name);
       for (const card of await playScenario(s, createNarrator(s.config))) {
         const pkg = analyze(s.history.slice(0, card.round + 1), s.config).find((p) => p.id === card.id)!;
-        let text = [card.headline, ...card.statements.map((st) => st.text)].join(" ");
-        for (const slot of Object.values(pkg.slots)) text = text.split(formatSlot(slot)).join("");
+        // Lower-case: a slot at the start of a sentence is shown capitalised.
+        let text = [card.headline, ...card.statements.map((st) => st.text)].join(" ").toLowerCase();
+        // Longest first, so a short value (e.g. "3") can't break up a longer one that contains it.
+        const values = Object.values(pkg.slots).map((v) => formatSlot(v).toLowerCase()).sort((a, b) => b.length - a.length);
+        for (const v of values) text = text.split(v).join("");
         expect(text).not.toMatch(/\d/);
       }
     }
@@ -58,8 +61,25 @@ describe("every card", () => {
   it("always says what it's unsure about, and leads any cause with a confidence word", () => {
     for (const p of packages) {
       expect(p.statements.some((s) => s.kind === "uncertain")).toBe(true);
-      const inferred = p.statements.find((s) => s.kind === "inferred");
-      if (inferred) expect(inferred.template.toLowerCase().startsWith(p.confidence)).toBe(true);
+      for (const s of p.statements.filter((s) => s.kind === "inferred")) {
+        expect(CONFIDENCE_SCALE.some((c) => s.text.toLowerCase().startsWith(c))).toBe(true);
+      }
+    }
+  });
+
+  it("has one glance line at level 1, the why at level 2, and the reasoning at level 3", () => {
+    for (const p of packages) {
+      const at = (level: number) => p.statements.filter((s) => s.level === level).map((s) => s.kind);
+      expect(at(1)).toEqual(["glance"]);
+      expect(at(2)).toEqual(expect.arrayContaining(["observed", "uncertain"]));
+      expect(at(3)).toEqual(expect.arrayContaining(["measure", "suspect", "reasoning"]));
+    }
+  });
+
+  it("glance line states the card's confidence, or says the cause is unclear", () => {
+    for (const p of packages) {
+      const glance = p.statements.find((s) => s.kind === "glance")!.text.toLowerCase();
+      expect(glance.includes(p.confidence === "unclear" ? "cause unclear" : p.confidence)).toBe(true);
     }
   });
 

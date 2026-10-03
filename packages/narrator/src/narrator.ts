@@ -14,8 +14,8 @@ import {
 } from "./types.js";
 
 /**
- * Plain code finds the truth: every watched metric → development → suspects →
- * evidence package. No model involved. Pure and deterministic.
+ * Plain code finds the truth: every watched metric → development → suspects
+ * (events, and other changes linked to it) → evidence package. No model involved. Pure and deterministic.
  */
 export function analyze(
   history: RoundSnapshot[],
@@ -25,15 +25,14 @@ export function analyze(
   const packages: EvidencePackage[] = [];
   for (const metric of Object.keys(config.metrics)) {
     const dev = detect(history, metric, settings);
-    if (!dev) continue;
-    packages.push(buildPackage(dev, attribute(dev, history, config, settings), history, config, settings));
+    if (dev) packages.push(buildPackage(dev, attribute(dev, { history, config, settings }), history, config, settings));
   }
   return packages;
 }
 
 /** Template wording. Always available, used whenever the model isn't. */
 export function templateCard(pkg: EvidencePackage): Card {
-  return toCard(pkg, pkg.headline, pkg.statements.map((s) => s.template), "template");
+  return toCard(pkg, pkg.headline, pkg.statements.map((s) => s.text), "template");
 }
 
 export interface NarratorOptions {
@@ -85,7 +84,7 @@ function toCard(pkg: EvidencePackage, headline: string, statements: string[], wr
     topic: pkg.topic,
     startRound: pkg.startRound,
     headline: render(headline, pkg.slots),
-    statements: pkg.statements.map((s, i) => ({ kind: s.kind, text: render(statements[i], pkg.slots) })),
+    statements: pkg.statements.map((s, i) => ({ kind: s.kind, level: s.level, text: render(statements[i], pkg.slots) })),
     confidence: pkg.confidence,
     priority: pkg.priority,
     evidence: pkg.evidence,
