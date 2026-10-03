@@ -1,0 +1,115 @@
+// The live server: ticks the world on a timer and streams each shift to every browser.
+//
+//   pnpm dev:server            (settings from .env: PORT, SEED, POPULATION, ROUND_MS, MAP, BRAINS)
+//
+// HTTP:  GET /health   GET /snapshot   GET /run (the run so far, replayable with `pnpm sim replay`)
+// WS:    see ServerMessage / ClientMessage in @motherlode/shared
+
+import { createServer } from "node:http";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { WebSocketServer, type WebSocket } from "ws";
+import type { ClientMessage, ServerMessage, WorldMap } from "@motherlode/shared";
+import { PLACEHOLDER_MAP, snapshot } from "@motherlode/sim";
+import { pickBrains } from "./brains";
+import { LiveWorld } from "./liveWorld";
+
+const root = resolve(import.meta.dirname, "../../..");
+loadEnv(resolve(root, ".env"));
+
+const PORT = Number(process.env.PORT ?? 8787);
+const world = new LiveWorld({
+  seed: process.env.SEED || "demo",
+  population: Number(process.env.POPULATION ?? 100),
+  roundMs: Number(process.env.ROUND_MS ?? 3000),
+  map: process.env.MAP ? (JSON.parse(readFileSync(resolve(root, process.env.MAP), "utf8")) as WorldMap) : PLACEHOLDER_MAP,
+  brains: pickBrains(process.env.BRAINS),
+});
+
+const http = createServer((req, res) => {
+  const send = (code: number, body: unknown) => {
+    res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": "*" });
+    res.end(JSON.stringify(body));
+  };
+  if (req.url === "/health") return send(200, { ok: true, ...world.status() });
+  if (req.url === "/snapshot") return send(200, snapshot(world.ctx, world.state));
+  if (req.url === "/run") return send(200, world.runLog());
+  send(404, { error: "not found" });
+});
+
+const wss = new WebSocketServer({ server: http });
+const clients = new Set<WebSocket>();
+
+function sendTo(ws: WebSocket, msg: ServerMessage): void {
+  if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
+}
+function broadcast(msg: ServerMessage): void {
+  const text = JSON.stringify(msg);
+  for (const ws of clients) if (ws.readyState === ws.OPEN) ws.send(text);
+}
+
+wss.on("connection", (ws) => {
+  clients.add(ws);
+  sendTo(ws, world.hello());
+  ws.on("message", (data) => {
+    let msg: ClientMessage;
+    try {
+      msg = JSON.parse(String(data));
+    } catch {
+      return sendTo(ws, { type: "error", message: "messages must be JSON" });
+    }
+    try {
+      const { reply, broadcast: all } = world.handle(msg);
+      if (reply) sendTo(ws, reply);
+      if (all) broadcast(all);
+    } catch (err) {
+      sendTo(ws, { type: "error", message: (err as Error).message });
+    }
+  });
+  ws.on("close", () => clients.delete(ws));
+});
+
+// The clock. Each shift waits for the previous one, so slow brains slow the world down instead of piling up.
+async function loop(): Promise<void> {
+  const started = Date.now();
+  if (!world.paused) {
+    try {
+      const msg = await world.tick();
+      if (msg) broadcast(msg);
+    } catch (err) {
+      console.error("Shift failed:", err);
+      world.paused = true;
+      broadcast({ type: "error", message: `The world stopped: ${(err as Error).message}` });
+      broadcast({ type: "status", status: world.status() });
+    }
+  }
+  setTimeout(loop, Math.max(0, world.roundMs - (Date.now() - started)));
+}
+
+http.listen(PORT, () => {
+  console.log(`Motherlode server on http://localhost:${PORT} (ws on the same port), seed "${world.state.seed}", ${world.state.miners.length} miners`);
+  void loop();
+});
+
+// Save the run on shutdown so it can be replayed.
+function saveAndExit(): void {
+  try {
+    const dir = resolve(root, "runs");
+    mkdirSync(dir, { recursive: true });
+    const file = resolve(dir, `live-${world.state.seed}-${Date.now()}.json`);
+    writeFileSync(file, JSON.stringify(world.runLog()));
+    console.log(`\nSaved run to ${file}`);
+  } finally {
+    process.exit(0);
+  }
+}
+process.on("SIGINT", saveAndExit);
+process.on("SIGTERM", saveAndExit);
+
+function loadEnv(file: string): void {
+  if (!existsSync(file)) return;
+  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
+  }
+}
