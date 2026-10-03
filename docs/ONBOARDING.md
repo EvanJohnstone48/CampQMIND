@@ -60,6 +60,14 @@ Even though nothing here touches AWARE, almost everything you learn does:
 | **Checking explanations against the truth** | "How do we know the explanation is right?" is the core research question for March. |
 | **Building with AI coding assistants** | I'll be dropping lots of ball here|
 
+### The one rule for the narrator
+
+**Code finds the truth, the AI only words it.** Plain, testable code works out what happened, which rules fired, which causes compete and how sure we are. It also re-runs the world without each cause to check. Only then does Gemini turn that evidence into a sentence. It never gets a raw data dump and guesses.
+
+Every explanation keeps facts, rules, guesses, "what if" results, unknowns and suggestions clearly apart. That's the same thing Woodgrove wants for operators.
+
+The full list of tools, and the ones we're deliberately holding off on (Python, Postgres, LangGraph…), is in [TECH.md](TECH.md).
+
 ---
 
 ## 2. First, what's a terminal?
@@ -141,7 +149,8 @@ The free Gemini tier has a daily limit on how many requests you can make, so tes
 |---|---|---|---|
 | 1 | [00-vision.md](00-vision.md) | 8 min | What Motherlode is, and how it maps onto the Woodgrove problem |
 | 2 | [SCAFFOLDING.md](../SCAFFOLDING.md) | 5 min | What every folder is for, and which ones are yours |
-| 3 | Your lane in [lanes/](lanes/) | 3 min | What your part does and the features you'll build |
+| 3 | [TECH.md](TECH.md) | 4 min | The tools we use, why, and what we're saving for later |
+| 4 | Your lane in [lanes/](lanes/) | 3 min | What your part does and the features you'll build |
 
 ---
 
