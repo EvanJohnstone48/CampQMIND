@@ -3,7 +3,7 @@
 Watches the world's numbers each shift and explains notable changes in plain words: what changed, what probably caused it, and how sure it is. Plain code finds the evidence. A language model (optional) only rewords it, and every rewording is checked. Full plan: [issues/prd-lane-3-narrator.md](../../issues/prd-lane-3-narrator.md).
 
 ```
-pnpm install
+pnpm install       # from the repo root (pnpm workspace)
 pnpm test          # unit tests + scripted ground-truth scenarios
 pnpm demo          # print the cards each scenario produces (add a name, and --llm for Gemini)
 pnpm accuracy      # how often the narrator is right, across 200 seeds per scenario
@@ -49,16 +49,18 @@ Chains only appear when the config declares a `knownLinks` entry between two met
 |---|---|---|---|---|
 | gold-rush | 99.0% | 0% | 0% | 0.5% |
 | two-suspects | 98.5% | 0% | 0% | 1.5% |
-| coincidence | 96.5% | 0% | 0% | 1.0% |
+| coincidence | 95.5% | 0% | 0% | 1.0% |
 | unexplained | 98.0% | 0% | 0% | 1.0% |
-| chain | 94.0% | 0% | 0% | 1.0% |
+| chain | 93.0% | 0% | 0% | 1.0% |
 | quiet | 99.0% | 0% | 0% | 1.0% |
+
+Since the merge, a sudden one-shift step of 4+ wobbles counts as a change even on top of a slow drift (a boon on a gently rising money supply used to go unreported). That moved two scenarios down by a point.
 
 "Wrong" cases are a start date more than one shift off, or a cause stated less confidently than it could be. These thresholds are tuned on synthetic noise. Re-check them with `pnpm accuracy` once real sim data exists.
 
 ## Plugging in the other lanes
 
-**Lane 1 (server).** Map each round onto `RoundSnapshot` (`{ round, metrics, events }`), then once per shift:
+**Lane 1 (server).** Done in `src/motherlode.ts`: `toRoundSnapshot` maps each shift record, `MOTHERLODE_CONFIG` lists what the sim's rules guarantee, and `LiveNarrator` is what the server runs (it smooths noisy per-shift flows and keeps "cause unclear" cards for big changes). The underlying API, for other worlds:
 
 ```ts
 const narrator = createNarrator(config, { llm: createGeminiClient(process.env.GEMINI_API_KEY!) });
@@ -77,6 +79,4 @@ const cards = await narrator.step(history); // never throws; broadcast the cards
 
 ## Not built yet
 
-- The Lane 1 adapter (waiting on their round format)
-- Counterfactual re-runs ("almost certainly")
-- Repo-root workspace setup. This package installs on its own for now. Once a root `pnpm-workspace.yaml` exists, delete this folder's `pnpm-lock.yaml`.
+- Counterfactual re-runs ("almost certainly"). The sim can now fork (`forkCompare` in `@motherlode/sim`), so this is within reach.

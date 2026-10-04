@@ -1,7 +1,7 @@
 /** Frontend view model, not a proposed shared simulation contract.
  * Map lane 1 snapshots into this shape in a WorldSource adapter. */
 export type Point = readonly [number, number]; // x, z in scene units
-export type Trade = 'Miner' | 'Woodcutter' | 'Farmer' | 'Smelter' | 'Hauler';
+export type Trade = 'Miner' | 'Woodcutter' | 'Farmer' | 'Smelter' | 'Hauler' | 'Builder' | 'Villager';
 export interface Place {
   id: string;
   name: string;

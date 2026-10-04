@@ -81,6 +81,8 @@ export interface SiteView {
   depth?: number;
   unsupportedDepth?: number;
   exhausted?: boolean;
+  /** A reported rich strike (after a gold rush): public news until the pocket is dug out. */
+  richStrike?: boolean;
   /** Forests: remaining stock as a fraction of capacity. */
   stockFraction?: number;
   /** Farms. */

@@ -31,9 +31,9 @@ export const DIAL_DEFS: DialDef[] = [
   { key: "houseSalvage", label: "Foreclosure salvage", group: "town", min: 0, max: 1000, step: 10, default: 150, unit: "coins", description: "What the town pays the bank for a foreclosed house." },
   { key: "reliefRations", label: "Soup kitchen", group: "town", min: 0, max: 4, step: 1, default: 2, unit: "rations/day", description: "Rations the treasury imports each day for hungry miners who have no food and almost no cash." },
   { key: "reliefCashThreshold", label: "Relief cash threshold", group: "town", min: 0, max: 500, step: 10, default: 60, unit: "coins", description: "Miners with less cash than this can get relief when hungry." },
-  { key: "wealthTax", label: "Wealth tax", group: "town", min: 0, max: 0.05, step: 0.001, default: 0.002, unit: "per day", description: "Daily share of cash above the exemption paid to the treasury (and so back to everyone as the dividend)." },
-  { key: "wealthTaxExemption", label: "Wealth tax exemption", group: "town", min: 0, max: 20000, step: 100, default: 4000, unit: "coins", description: "Cash below this is never taxed." },
-  { key: "treasuryReserve", label: "Treasury reserve", group: "town", min: 0, max: 50000, step: 500, default: 4000, unit: "coins", description: "The treasury shares a tenth of anything above this equally among all miners each day." },
+  { key: "wealthTax", label: "Wealth tax", group: "town", min: 0, max: 0.05, step: 0.001, default: 0.004, unit: "per day", description: "Daily share of cash above the exemption paid to the treasury (and so back to everyone as the dividend)." },
+  { key: "wealthTaxExemption", label: "Wealth tax exemption", group: "town", min: 0, max: 20000, step: 100, default: 3000, unit: "coins", description: "Cash below this is never taxed." },
+  { key: "treasuryReserve", label: "Treasury reserve", group: "town", min: 0, max: 50000, step: 500, default: 10000, unit: "coins", description: "The treasury shares a tenth of anything above this equally among all miners each day." },
 
   // Needs
   { key: "hungerPerShift", label: "Hunger rate", group: "needs", min: 0.05, max: 0.5, step: 0.01, default: 0.2, unit: "per shift", description: "Nourishment lost each shift." },
@@ -57,7 +57,7 @@ export const DIAL_DEFS: DialDef[] = [
   // Mining
   { key: "digYield", label: "Copper dig yield", group: "mining", min: 0, max: 15, step: 0.5, default: 4, unit: "ore/shift", description: "Copper ore from an average miner-shift at the surface of an average vein." },
   { key: "goldYield", label: "Gold dig yield", group: "mining", min: 0, max: 3, step: 0.05, default: 0.35, unit: "gold/shift", description: "Gold from an average miner-shift at the surface of an average gold vein." },
-  { key: "orePerLevel", label: "Ore per depth level", group: "mining", min: 10, max: 500, step: 10, default: 150, unit: "units", description: "Ore dug out before a shaft gets one level deeper (harder, poorer, needs another support)." },
+  { key: "orePerLevel", label: "Ore per depth level", group: "mining", min: 10, max: 500, step: 10, default: 250, unit: "units", description: "Ore dug out before a shaft gets one level deeper (harder, poorer, needs another support)." },
   { key: "supportTimber", label: "Timber per support", group: "mining", min: 0, max: 10, step: 1, default: 2, unit: "timber/level", description: "Timber needed to shore up each new level of a shaft." },
   { key: "caveInRisk", label: "Cave-in risk", group: "mining", min: 0, max: 0.1, step: 0.001, default: 0.008, unit: "per dig", description: "Base chance of a cave-in per dig; multiplied by unsupported depth and hardness." },
   { key: "injuryShifts", label: "Injury length", group: "mining", min: 0, max: 30, step: 1, default: 6, unit: "shifts", description: "How long a cave-in or lightning strike keeps a miner off work." },

@@ -7,6 +7,8 @@ import type {
   ClientMessage,
   Intent,
   MinerSeed,
+  NarratorCard,
+  ShiftRecord,
   OverseerAction,
   ServerMessage,
   ServerStatus,
@@ -44,8 +46,18 @@ export interface LiveWorldOptions {
    * (default: the sim's baseline). LLM miners are approximated by it in forks.
    */
   syncBrain?: Brain;
+  /** Lane 3's narrator; cards ride along with each shift. */
+  narrator?: NarratorHook;
+  /** Shown to browsers, e.g. "agents (fuzzy)". */
+  brainsLabel?: string;
   /** Max time to wait for brains each shift; late miners fall back to the baseline brain. */
   brainBudgetMs?: number;
+}
+
+export interface NarratorHook {
+  push(record: ShiftRecord): Promise<NarratorCard[]>;
+  cards(): NarratorCard[];
+  rewind(shift: number): void;
 }
 
 export class LiveWorld {
@@ -73,7 +85,15 @@ export class LiveWorld {
   }
 
   hello(): ServerMessage {
-    return { type: "hello", map: this.opts.map, dialDefs: DIAL_DEFS, snapshot: snapshot(this.ctx, this.state), status: this.status() };
+    return {
+      type: "hello",
+      map: this.opts.map,
+      dialDefs: DIAL_DEFS,
+      snapshot: snapshot(this.ctx, this.state),
+      status: this.status(),
+      cards: this.opts.narrator?.cards() ?? [],
+      brains: this.opts.brainsLabel ?? "custom",
+    };
   }
 
   /** Resolves one shift. Returns the message to broadcast, or undefined if a shift is already running. */
@@ -91,9 +111,10 @@ export class LiveWorld {
       this.inputs.push(stripTraces(inputs));
       this.state = state;
       if (state.shift % SNAPSHOT_EVERY === 0) this.snapshots.set(state.shift, state);
+      const cards = this.opts.narrator ? await this.opts.narrator.push(record) : [];
       return {
         type: "shift",
-        update: { ...record, miners: state.miners.map((m) => minerPublic(state, m)), sites: siteViews(this.ctx, state), jobs: jobViews(state) },
+        update: { ...record, miners: state.miners.map((m) => minerPublic(state, m)), sites: siteViews(this.ctx, state), jobs: jobViews(state), cards },
       };
     } finally {
       this.busy = false;
@@ -117,7 +138,7 @@ export class LiveWorld {
         return { broadcast: { type: "status", status: this.status() } };
       case "revert":
         this.revert(msg.toShift);
-        return { broadcast: { type: "reverted", snapshot: snapshot(this.ctx, this.state) } };
+        return { broadcast: { type: "reverted", snapshot: snapshot(this.ctx, this.state), cards: this.opts.narrator?.cards() ?? [] } };
       case "fork": {
         const shifts = Math.max(1, Math.min(500, Math.floor(msg.shifts)));
         const res = forkCompare(this.ctx, this.state, shifts, msg.actions, this.opts.syncBrain ?? baselineBrain);
@@ -139,6 +160,7 @@ export class LiveWorld {
     this.inputs.length = target;
     for (const s of [...this.snapshots.keys()]) if (s > target) this.snapshots.delete(s);
     this.queued = [];
+    this.opts.narrator?.rewind(target - 1);
   }
 
   /** The run so far, replayable with `pnpm sim replay`. */

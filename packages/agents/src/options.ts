@@ -57,7 +57,10 @@ export function listOptions(obs: Observation, mk: Market = market(obs)): Option[
   const stay = (s: SiteView) => (me.location === s.id ? 1.1 : 1);
   const wf = (s: SiteView) => workFactor(me.needs.energy, me.needs.health, s.travel) * stay(s);
   const crowd = (s: SiteView) => crowdFactor(s.workersLastShift + (me.location === s.id ? 0 : 1), s.capacity);
-  const rumoured = new Set(obs.witnessed.filter((e) => e.kind === "rumour" && e.siteId).map((e) => e.siteId!));
+  const rumoured = new Set([
+    ...obs.witnessed.filter((e) => e.kind === "rumour" && e.siteId).map((e) => e.siteId!),
+    ...obs.sites.filter((s) => s.richStrike).map((s) => s.id),
+  ]);
 
   for (const s of obs.sites) {
     if (s.kind === "farm" && (s.commons || s.ownerId === me.id)) {

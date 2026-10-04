@@ -22,6 +22,9 @@ export interface Development {
   stillMoving: boolean;
 }
 
+/** A one-shift jump this many wobbles big counts as a sudden step. */
+export const SUDDEN_STEP = 4;
+
 /** Deviation at which a change is called "far outside" its normal range. */
 export const STRONG_DEVIATION = 4;
 
@@ -30,11 +33,13 @@ export const STRONG_DEVIATION = 4;
  * earliest first. Each shift is judged on a two-shift average (so one noisy
  * shift can't fake a start) against the usual level of the shifts before t.
  * t is accepted when:
- *  - the shift before t didn't itself look like a start (under 1.5 wobbles out)
+ *  - the shift before t didn't itself look like a start (under 1.5 wobbles out), unless t is a
+ *    sudden step (a single-shift jump of SUDDEN_STEP wobbles or more), which counts even on a drift
  *  - t and t+1 are at least 1.5 wobbles out, in the same direction
  *  - at least 80% of shifts from t to now stay at least one wobble out
  *  - each of the last two is at least 2.5 wobbles out
  *  - the level now is fuzzily "low" or "high" (degree >= 0.5)
+ *  - the change is at least the metric's minChange, if it has one
  * The two-shift average reacts a shift late, so if the raw value just before t
  * was already out, the start moves back to it.
  *
@@ -43,7 +48,7 @@ export const STRONG_DEVIATION = 4;
  * Once the start is older than `maxEpisodeRounds`, it's the new normal and
  * nothing is reported.
  */
-export function detect(history: RoundSnapshot[], metric: string, settings: NarratorSettings): Development | null {
+export function detect(history: RoundSnapshot[], metric: string, settings: NarratorSettings, minChange = 0): Development | null {
   const { baselineRounds, maxEpisodeRounds, recentRounds } = settings;
   const raw = history.map((s) => s.metrics[metric]);
   if (!raw.every((v) => v !== undefined && Number.isFinite(v))) return null;
@@ -58,7 +63,10 @@ export function detect(history: RoundSnapshot[], metric: string, settings: Narra
     const sign = Math.sign(devs[0]);
     const out = (z: number, by: number) => z * sign >= by;
 
-    if (sign === 0 || out(dev(smooth(t - 1)), 1.5)) continue;
+    // A sudden step (one shift jumping more than ~4 wobbles) is a change in its own right, even on
+    // top of a gentle drift that already had the shift before it looking a little out.
+    const sudden = Math.abs(values[t] - values[t - 1]) / spread >= SUDDEN_STEP && Math.sign(values[t] - values[t - 1]) === sign;
+    if (sign === 0 || (out(dev(smooth(t - 1)), 1.5) && !sudden)) continue;
     if (!out(devs[0], 1.5) || !out(devs[1], 1.5)) continue;
     if (devs.filter((z) => out(z, 1)).length < 0.8 * devs.length) continue;
     if (!devs.slice(-2).every((z) => out(z, 2.5))) continue;
@@ -67,8 +75,9 @@ export function detect(history: RoundSnapshot[], metric: string, settings: Narra
     const deviation = dev(now);
     const level = levelTerms(deviation);
     if ((sign > 0 ? level.high : level.low) < 0.5) continue;
+    if (Math.abs(now - usual) < minChange) continue;
 
-    const start = out(dev(values[t - 1]), 1) ? t - 1 : t;
+    const start = !sudden && out(dev(values[t - 1]), 1) ? t - 1 : t;
     const trend = trendTerms(slopePerRound(values.slice(-recentRounds)) / spread);
     const size = Math.abs(deviation);
     return {

@@ -10,9 +10,10 @@ import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
-import type { ClientMessage, ServerMessage, WorldMap } from "@motherlode/shared";
+import { ALPINE_VALLEY, type ClientMessage, type ServerMessage, type WorldMap } from "@motherlode/shared";
 import { compareBrains } from "@motherlode/agents";
-import { PLACEHOLDER_MAP, minerPublic, snapshot } from "@motherlode/sim";
+import { LiveNarrator, createGeminiClient } from "@motherlode/narrator";
+import { minerPublic, snapshot } from "@motherlode/sim";
 import { pickTown } from "./brains";
 import { LiveWorld } from "./liveWorld";
 
@@ -26,9 +27,11 @@ const world = new LiveWorld({
   seed: SEED,
   population: town.population,
   roundMs: Number(process.env.ROUND_MS ?? 3000),
-  map: process.env.MAP ? (JSON.parse(readFileSync(resolve(root, process.env.MAP), "utf8")) as WorldMap) : PLACEHOLDER_MAP,
+  map: process.env.MAP ? (JSON.parse(readFileSync(resolve(root, process.env.MAP), "utf8")) as WorldMap) : ALPINE_VALLEY,
   brains: town.brains,
   syncBrain: town.syncBrain,
+  brainsLabel: town.name,
+  narrator: makeNarrator(),
 });
 
 const http = createServer((req, res) => {
@@ -114,6 +117,16 @@ function saveAndExit(): void {
 }
 process.on("SIGINT", saveAndExit);
 process.on("SIGTERM", saveAndExit);
+
+/** Lane 3's narrator. With a Gemini key it rewords cards (every rewording is checked); NARRATOR_LLM=off keeps templates. */
+function makeNarrator(): LiveNarrator {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  const useLlm = key && process.env.NARRATOR_LLM !== "off";
+  return new LiveNarrator({
+    llm: useLlm ? createGeminiClient(key!, process.env.NARRATOR_MODEL || process.env.GEMINI_MODEL || undefined) : undefined,
+    onProblem: (m) => console.warn("[narrator]", m),
+  });
+}
 
 function loadEnv(file: string): void {
   if (!existsSync(file)) return;

@@ -8,6 +8,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@motherlode/narrator": "workspace:*",
     "@motherlode/agents": "workspace:*",
     "@motherlode/shared": "workspace:*",
     "@motherlode/sim": "workspace:*"

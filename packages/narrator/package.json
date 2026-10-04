@@ -16,6 +16,11 @@
     "@types/node": "^26.6.4",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "@motherlode/agents": "workspace:*",
+    "@motherlode/sim": "workspace:*"
+  },
+  "dependencies": {
+    "@motherlode/shared": "workspace:*"
   }
 }

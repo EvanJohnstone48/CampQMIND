@@ -61,7 +61,7 @@ function applyOne(ctx: SimContext, state: WorldState, a: OverseerAction, index: 
         const gold = state.veins.filter((v) => v.ore === "gold");
         const vein = (a.siteId && state.veins.find((v) => v.siteId === a.siteId)) || (gold.length ? rng.pick(gold) : undefined);
         if (!vein) return reject(log, "no vein for a gold rush");
-        const units = 80;
+        const units = 150;
         vein.tonnage += units;
         vein.exhausted = false;
         const ev = log.emit({ kind: "act-of-god", siteId: vein.siteId, data: { act: "goldRush", units }, witnesses: everyone, text: `Gold is found at ${ctx.sites[vein.siteId].name}!` });

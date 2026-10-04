@@ -85,8 +85,12 @@ export interface MinerPublic {
   wellbeing: number;
   needs: Needs;
   home: HomeKind;
+  /** The house lot they own and live in, if any. */
+  homeSiteId?: string;
   injured: boolean;
   employerId?: string;
   /** Which kind of brain drives this miner ("fuzzy", "llm"...), from Lane 2's population. */
   brain?: string;
+  /** Lane 2's look for the 3D bean, when the population provides one. */
+  look?: { hue: number; hat: string };
 }

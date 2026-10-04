@@ -37,6 +37,7 @@ export function siteViews(ctx: SimContext, state: WorldState, from?: string): Si
         v.depth = vein.depth;
         v.unsupportedDepth = Math.max(0, vein.depth - vein.supportedDepth);
         v.exhausted = vein.exhausted;
+        if (vein.pocket) v.richStrike = true;
         break;
       }
       case "forest": {
@@ -185,9 +186,11 @@ export function minerPublic(state: WorldState, m: MinerState): MinerPublic {
     wellbeing: m.wellbeing,
     needs: { ...m.needs },
     home: m.homeKind,
+    homeSiteId: m.homeSiteId,
     injured: m.collapsed || state.shift < m.injuredUntilShift,
     employerId: job?.employerId,
     brain: typeof m.traits?.brain === "string" ? m.traits.brain : undefined,
+    look: (m.traits?.look as MinerPublic["look"]) ?? undefined,
   };
 }
 

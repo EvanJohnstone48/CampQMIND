@@ -17,7 +17,7 @@ import {
   type ShiftMetrics,
 } from "@motherlode/shared";
 import { defaultDials, type Dials } from "./dials";
-import { loadMap, siteCapacity, travelMatrix } from "./map";
+import { DEFAULT_CAPACITY, loadMap, siteCapacity, travelMatrix } from "./map";
 import { defaultPopulation } from "./population";
 import { ORE_FACTOR } from "./tradingPost";
 
@@ -61,6 +61,11 @@ export interface VeinState {
   grade0: number;
   gradeScale: number;
   hardness0: number;
+  /**
+   * How big the mine face is compared with a standard one (capacity / 6 diggers). A bigger face
+   * (more tunnels) holds proportionally more ore and deepens proportionally slower.
+   */
+  faceScale: number;
   depth: number;
   supportedDepth: number;
   exhausted: boolean;
@@ -152,6 +157,8 @@ export interface WorldState {
   nextJobId: number;
   bank: BankState;
   treasury: Holder;
+  /** What the town owes the bank for soup-kitchen credit in lean times. Repaid before any dividend. */
+  treasuryDebt: number;
   prices: Record<Good, PriceView>;
   worldPrices: Record<Good, number>;
   modifiers: Modifier[];
@@ -253,10 +260,12 @@ export function createWorld(config: WorldConfig): { ctx: SimContext; state: Worl
   const veins: VeinState[] = sitesOf("vein").map((s) => {
     const rng = keyedRng(seed, "vein", s.id);
     const gold = s.ore === "gold";
+    const faceScale = siteCapacity(s) / DEFAULT_CAPACITY.vein;
     return {
       siteId: s.id,
       ore: gold ? "gold" : "copper",
-      tonnage: gold ? rng.int(300, 600) : rng.int(5000, 9000),
+      tonnage: Math.round((gold ? rng.int(300, 600) : rng.int(5000, 9000)) * faceScale),
+      faceScale,
       extracted: 0,
       grade0: rng.range(0.75, 1.25),
       gradeScale: rng.range(20, 35),
@@ -300,6 +309,7 @@ export function createWorld(config: WorldConfig): { ctx: SimContext; state: Worl
     nextJobId: 1,
     bank: { cash: setup.bankReserves, inventory: emptyInventory(), initialReserves: setup.bankReserves, loans: [], nextLoanId: 1, lending: true },
     treasury: { cash: setup.treasuryCash, inventory: emptyInventory() },
+    treasuryDebt: 0,
     prices,
     worldPrices: worldBasePrices(dials),
     modifiers: [],

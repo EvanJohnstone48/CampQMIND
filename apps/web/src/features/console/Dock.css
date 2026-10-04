@@ -1,0 +1,51 @@
+.dock { position: absolute; top: 100px; right: 36px; bottom: 300px; width: 400px; display: flex; flex-direction: column; z-index: 11; overflow: hidden; color: #30463b; }
+.dock.is-closed { bottom: auto; width: auto; }
+.dock-tabs { display: flex; gap: 2px; padding: 8px 8px 0; border-bottom: 1px solid #52674718; }
+.dock-tabs button { border: 0; background: transparent; padding: 7px 10px; border-radius: 8px 8px 0 0; font-size: 12px; color: inherit; opacity: 0.7; }
+.dock-tabs button.is-active { background: #fffaf2; opacity: 1; font-weight: 600; }
+.dock-tabs .dock-toggle { margin-left: auto; font-size: 16px; opacity: 0.6; }
+.dock-count { margin-left: 5px; font-size: 10px; background: #344c40; color: #f5e2ac; border-radius: 8px; padding: 0 5px; }
+.dock-body { flex: 1; overflow: auto; padding: 10px 12px; min-height: 0; }
+.dock-body .narrator { padding: 0; }
+.dock-body .agents-tab { flex-direction: column; font-size: 12px; }
+.dock-error { font-size: 11px; color: #a8452f; padding: 4px 12px 8px; }
+.dock-offline { position: absolute; top: 100px; right: 36px; max-width: 300px; padding: 10px 14px; font-size: 12px; z-index: 11; }
+.dock-offline code { font-size: 11px; }
+.app.has-dock .miner-card, .app.has-dock .help-card { right: 450px; }
+
+.overseer section { margin-bottom: 14px; }
+.overseer h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.65; }
+.overseer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.overseer button, .overseer select { font-size: 12px; padding: 6px 8px; border-radius: 8px; border: 1px solid #52674730; background: #fffaf2; color: inherit; }
+.overseer button:hover:not(:disabled) { background: #f0ead8; }
+.overseer-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+.overseer-row input { width: 56px; }
+.overseer-note { font-size: 12px; margin: 0 0 6px; }
+.overseer-timeline { list-style: none; padding: 0; margin: 6px 0 0; font-size: 12px; }
+.overseer-timeline li { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; }
+.overseer-timeline li span { opacity: 0.6; flex: 0 0 64px; }
+.overseer-timeline li button { margin-left: auto; padding: 1px 6px; font-size: 11px; }
+.overseer-fork { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 8px; }
+.overseer-fork caption { text-align: left; font-weight: 600; padding-bottom: 3px; }
+.overseer-fork td, .overseer-fork th { padding: 2px 4px; text-align: right; }
+.overseer-fork td:first-child { text-align: left; }
+.overseer-fork .up { color: #2f7a4b; }
+.overseer-fork .down { color: #a8452f; }
+.dials details { margin-bottom: 4px; }
+.dials summary { cursor: pointer; font-size: 12px; text-transform: capitalize; }
+.dial { display: block; font-size: 11px; margin: 4px 0 6px 10px; }
+.dial span { display: flex; justify-content: space-between; }
+.dial em { font-style: normal; opacity: 0.7; }
+.dial input { width: 100%; }
+
+.economy-activity { display: flex; height: 18px; border-radius: 6px; overflow: hidden; margin-bottom: 10px; font-size: 9px; color: #fff; }
+.economy-activity span { display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; min-width: 2px; }
+.act-rest { background: #9aa59a; } .act-dig { background: #b0753f; } .act-chop { background: #5f8a4c; } .act-farm { background: #b8a843; }
+.act-smelt { background: #b85a3a; } .act-build { background: #6f7fa8; } .act-work { background: #7d6aa8; }
+.spark { display: grid; grid-template-columns: 1fr 160px 70px; align-items: center; gap: 6px; font-size: 12px; color: #30463b; }
+.spark svg { color: #4f7c62; }
+.spark-value { text-align: right; font-variant-numeric: tabular-nums; }
+.economy-empty { font-size: 12px; opacity: 0.7; }
+
+@media (max-width: 1100px) { .dock { right: 24px; width: 340px; } .app.has-dock .miner-card { right: 380px; } }
+@media (max-width: 700px) { .dock { left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; height: 45dvh; } .app.has-dock .miner-card { right: 16px; } }

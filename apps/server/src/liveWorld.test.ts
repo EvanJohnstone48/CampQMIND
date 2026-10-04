@@ -65,3 +65,26 @@ describe("live world", () => {
     expect(w.handle({ type: "resume" }).broadcast).toMatchObject({ status: { paused: false } });
   });
 });
+
+describe("live world with the narrator", () => {
+  it("sends cards with shifts, and rewinds the narrator with the world", async () => {
+    const { LiveNarrator } = await import("@motherlode/narrator");
+    const narrator = new LiveNarrator();
+    const w = new LiveWorld({ seed: "narr", map: PLACEHOLDER_MAP, population: 40, roundMs: 1000, brains: baselineProvider, narrator });
+    let cards = 0;
+    const tick = async () => {
+      const msg = await w.tick();
+      if (msg?.type === "shift") cards += msg.update.cards.length;
+    };
+    // The narrator needs ~16 shifts of history to know what normal looks like.
+    for (let i = 0; i < 20; i++) await tick();
+    w.handle({ type: "overseer", action: { type: "godPower", kind: "boon", minerId: "m001", amount: 20000 } });
+    for (let i = 0; i < 15; i++) await tick();
+    const hello = w.hello();
+    expect(hello.type === "hello" && hello.cards.length).toBe(cards);
+    expect(cards).toBeGreaterThan(0);
+    expect(w.hello().type === "hello" && (w.hello() as { cards: { headline: string }[] }).cards.some((c) => /money/i.test(c.headline))).toBe(true);
+    const { broadcast } = w.handle({ type: "revert", toShift: 10 });
+    expect(broadcast?.type === "reverted" && broadcast.cards.every((c) => c.round <= 10)).toBe(true);
+  });
+});

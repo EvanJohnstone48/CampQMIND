@@ -8,6 +8,23 @@ import type { DialDef, OverseerAction } from "./overseer";
 import type { ShiftMetrics } from "./metrics";
 import type { ShiftRecord } from "./record";
 
+/**
+ * A narrator explanation card (Lane 3's Card, from @motherlode/narrator). Kept structural here so
+ * the contract doesn't depend on the narrator package.
+ */
+export interface NarratorCard {
+  id: string;
+  round: number;
+  topic: string;
+  startRound: number;
+  headline: string;
+  statements: { kind: string; level: 1 | 2 | 3; text: string }[];
+  confidence: string;
+  priority: number;
+  evidence: unknown[];
+  writtenBy: "template" | "llm";
+}
+
 /** Full picture of the world, sent on connect and after a revert. */
 export interface WorldSnapshot {
   seed: string;
@@ -33,13 +50,15 @@ export interface ShiftUpdate extends ShiftRecord {
   miners: MinerPublic[];
   sites: SiteView[];
   jobs: JobView[];
+  /** New narrator cards this shift. */
+  cards: NarratorCard[];
 }
 
 export type ServerMessage =
-  | { type: "hello"; map: WorldMap; dialDefs: DialDef[]; snapshot: WorldSnapshot; status: ServerStatus }
+  | { type: "hello"; map: WorldMap; dialDefs: DialDef[]; snapshot: WorldSnapshot; status: ServerStatus; cards: NarratorCard[]; brains: string }
   | { type: "shift"; update: ShiftUpdate }
   | { type: "status"; status: ServerStatus }
-  | { type: "reverted"; snapshot: WorldSnapshot }
+  | { type: "reverted"; snapshot: WorldSnapshot; cards: NarratorCard[] }
   | { type: "forkResult"; requestId: string; baseline: ShiftMetrics[]; variant: ShiftMetrics[] }
   | { type: "error"; message: string };
 

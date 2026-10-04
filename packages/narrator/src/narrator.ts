@@ -24,7 +24,7 @@ export function analyze(
 ): EvidencePackage[] {
   const packages: EvidencePackage[] = [];
   for (const metric of Object.keys(config.metrics)) {
-    const dev = detect(history, metric, settings);
+    const dev = detect(history, metric, settings, config.metrics[metric].minChange);
     if (dev) packages.push(buildPackage(dev, attribute(dev, { history, config, settings }), history, config, settings));
   }
   return packages;
@@ -57,7 +57,8 @@ export function createNarrator(config: NarratorConfig, options: NarratorOptions 
   return {
     async step(history) {
       try {
-        const picked = gate.select(analyze(history, config, settings));
+        const candidates = analyze(history, config, settings).filter((p) => p.confidence !== "unclear" || p.priority >= settings.unclearMinPriority);
+        const picked = gate.select(candidates);
         return await Promise.all(picked.map((pkg) => write(pkg)));
       } catch (e) {
         report(`narrator failed: ${String(e)}`);

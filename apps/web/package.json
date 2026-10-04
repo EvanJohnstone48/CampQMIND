@@ -8,9 +8,13 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:live": "playwright test -c playwright.live.config.ts",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@motherlode/narrator": "workspace:*",
+    "@motherlode/shared": "workspace:*",
     "@react-three/drei": "^10.7.0",
     "@react-three/fiber": "^9.3.0",
     "react": "^19.1.1",
@@ -24,6 +28,8 @@
     "@types/three": "^0.180.0",
     "@vitejs/plugin-react": "^5.0.4",
     "typescript": "~5.9.3",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "@motherlode/agents": "workspace:*",
+    "@motherlode/sim": "workspace:*"
   }
 }

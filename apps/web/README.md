@@ -4,14 +4,16 @@ Self-contained React / TypeScript / react-three-fiber app. All implementation li
 
 ## Run
 
-From this directory, with Node 22.18+ (or Node 24):
+From the repo root, with Node 22.18+ (or Node 24):
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm dev        # the world server and this app; the app connects to it live
 ```
 
-Open the localhost URL printed by Vite. On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`. `pnpm install` / `pnpm dev` are also supported; the checked-in lockfile is for npm. This package is standalone until the team establishes the root workspace.
+Add `?demo` to the URL for the self-contained demo below, or `?server=ws://host:port` to use another server.
+
+Open the localhost URL printed by Vite. This package is part of the root pnpm workspace.
 
 ```sh
 npm run build
@@ -35,6 +37,8 @@ For browser checks, build first, then run `npm run test:browser`. They use the i
 - Optional quiet procedural river and pickaxe sound. Initially muted; no external audio assets or API keys.
 
 ## Integration boundary
+
+**Now connected** (see [docs/INTEGRATION.md](../../docs/INTEGRATION.md)): `src/net/live.ts` is the live `WorldSource`. It maps the server's shifts onto `WorldView` and feeds the console dock (`features/console/Dock.tsx`: narrator, miners, economy charts, Overseer controls). The world runs on this valley: `ALPINE_VALLEY` in `@motherlode/shared` mirrors `demoMap.ts`, checked by `src/net/valley.test.ts`. The notes below describe the original demo-only design.
 
 `src/net/world.ts` defines a **frontend view model**, not a team-wide contract. `WorldSource.connect(publish)` supplies full snapshots and returns a cleanup function. `App` accepts a `source` and `initialWorld`; the shared browser store publishes snapshots to the view. `src/net/demo.ts` is a replaceable presentation demo, not an economy or agent brain.
 

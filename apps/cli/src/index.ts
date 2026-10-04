@@ -6,16 +6,17 @@
 //   pnpm sim balance [--seeds 5] [--shifts 2000]
 //   pnpm sim fixture [--seed demo] [--shifts 80] [--out fixtures/demo.ndjson]
 //   pnpm sim map-check path/to/map.json
-// Every command takes --map path/to/map.json to use Lane 4's map instead of the placeholder,
+// Every command runs on Lane 4's Alpine valley; --map path/to/map.json uses another map,
 // and --brains fuzzy|baseline (default fuzzy: Lane 2's town; baseline: the sim's simple reference brain).
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { Brain, MinerSeed, OverseerAction, ServerMessage, ShiftMetrics, WorldMap } from "@motherlode/shared";
+import { ALPINE_VALLEY, type Brain, type MinerSeed, type OverseerAction, type ServerMessage, type ShiftMetrics, type WorldMap } from "@motherlode/shared";
 import { fuzzyBrain, generatePopulation } from "@motherlode/agents";
+import { LiveNarrator } from "@motherlode/narrator";
+import type { ShiftRecord } from "@motherlode/shared";
 import {
   DIAL_DEFS,
-  PLACEHOLDER_MAP,
   balanceReport,
   baselineBrain,
   createWorld,
@@ -35,7 +36,7 @@ const cwd = process.env.INIT_CWD ?? process.cwd();
 const [command, ...rest] = process.argv.slice(2);
 const { flags, positional } = parseArgs(rest);
 
-function main(): number {
+async function main(): Promise<number> {
   switch (command) {
     case "run":
       return cmdRun();
@@ -46,7 +47,7 @@ function main(): number {
     case "balance":
       return cmdBalance();
     case "fixture":
-      return cmdFixture();
+      return await cmdFixture();
     case "map-check":
       return cmdMapCheck();
     default:
@@ -149,7 +150,7 @@ function cmdBalance(): number {
  * A recorded stream of exactly what the server would send, so Lanes 3 and 4 can build
  * against real data before the live server is up. A few acts of god are scripted in.
  */
-function cmdFixture(): number {
+async function cmdFixture(): Promise<number> {
   const seed = str("seed", "demo");
   const shifts = num("shifts", 80);
   const out = str("out", "fixtures/demo.ndjson");
@@ -161,22 +162,24 @@ function cmdFixture(): number {
     [Math.floor(shifts * 0.5)]: [{ type: "godPower", kind: "lightning", minerId: start.miners[0].id }],
     [Math.floor(shifts * 0.75)]: [{ type: "actOfGod", kind: "earthquake" }],
   };
-  const lines: ServerMessage[] = [{ type: "hello", map, dialDefs: DIAL_DEFS, snapshot: snapshot(ctx, start), status: { paused: false, roundMs: 3000, shift: 0 } }];
+  const lines: ServerMessage[] = [{ type: "hello", map, dialDefs: DIAL_DEFS, snapshot: snapshot(ctx, start), status: { paused: false, roundMs: 3000, shift: 0 }, cards: [], brains: str("brains", "fuzzy") }];
+  const shiftsOut: { record: ShiftRecord; update: Omit<Extract<ServerMessage, { type: "shift" }>["update"], "cards"> }[] = [];
   recordRun(map, { seed, population: town.population }, {
     shifts,
     brain: town.brain,
     plan,
     onShift: (record, _inputs, state) => {
-      lines.push({
-        type: "shift",
-        update: { ...record, miners: state.miners.map((m) => minerPublic(state, m)), sites: siteViews(ctx, state), jobs: jobViews(state) },
-      });
+      shiftsOut.push({ record, update: { ...record, miners: state.miners.map((m) => minerPublic(state, m)), sites: siteViews(ctx, state), jobs: jobViews(state) } });
     },
   });
+  // Lane 3's narrator, exactly as the live server runs it (templates, no LLM).
+  const narrator = new LiveNarrator();
+  for (const s of shiftsOut) lines.push({ type: "shift", update: { ...s.update, cards: await narrator.push(s.record) } });
   const path = resolve(cwd, out);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
-  console.log(`Wrote ${lines.length} messages (${shifts} shifts) to ${out}`);
+  const cards = lines.reduce((a, l) => a + (l.type === "shift" ? l.update.cards.length : 0), 0);
+  console.log(`Wrote ${lines.length} messages (${shifts} shifts, ${cards} narrator cards) to ${out}`);
   return 0;
 }
 
@@ -217,7 +220,7 @@ function brains(seed: string, count: number): { population: MinerSeed[] | number
 
 function loadMapFlag(): WorldMap {
   const file = flags.map as string | undefined;
-  return file ? readJson<WorldMap>(file) : PLACEHOLDER_MAP;
+  return file ? readJson<WorldMap>(file) : ALPINE_VALLEY;
 }
 
 function parseArgs(args: string[]): { flags: Record<string, string | boolean>; positional: string[] } {
@@ -265,4 +268,4 @@ function usage(text: string): number {
   return 1;
 }
 
-process.exitCode = main();
+main().then((code) => (process.exitCode = code));

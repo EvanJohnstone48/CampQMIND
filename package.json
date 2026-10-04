@@ -7,11 +7,16 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --parallel --filter @motherlode/server --filter @motherlode/web run dev",
     "dev:server": "pnpm --filter @motherlode/server dev",
-    "sim": "pnpm --filter @motherlode/cli sim"
+    "dev:web": "pnpm --filter @motherlode/web dev",
+    "build": "pnpm --filter @motherlode/web build",
+    "test": "vitest run && pnpm --filter @motherlode/web test",
+    "test:watch": "vitest",
+    "test:live": "pnpm --filter @motherlode/web build && pnpm --filter @motherlode/web test:live",
+    "typecheck": "pnpm -r typecheck",
+    "sim": "pnpm --filter @motherlode/cli sim",
+    "narrator:accuracy": "pnpm --filter @motherlode/narrator accuracy"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

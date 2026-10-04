@@ -8,12 +8,16 @@ import { Icon } from './ui/Icons';
 import { weatherAt } from './features/world/weather';
 import type { WeatherMode } from './features/world/weather';
 import { siteCapacities } from './net/demoMap';
+import type { LiveConnection } from './net/live';
+import { Dock } from './features/console/Dock';
 
 const kindIcons: Record<string, string> = { town: 'home', copper: 'pick', gold: 'pick', forest: 'tree', farm: 'wheat', smelter: 'flame' };
 
-/** Composition point for a future live adapter. Pass source + initialWorld from lane 1. */
-export function App({ source: providedSource, initialWorld }: { source?: WorldSource; initialWorld?: WorldView }) {
+/** Composition point. Pass `live` for the server (Lane 1), or `source` for any other WorldSource; neither runs the local demo. */
+export function App({ source: givenSource, initialWorld, live }: { source?: WorldSource; initialWorld?: WorldView; live?: LiveConnection }) {
+  const providedSource = live?.source ?? givenSource;
   const source = useMemo(() => providedSource ?? createDemoSource(), [providedSource]);
+  const [dockOpen, setDockOpen] = useState(true);
   const store = useMemo(() => createWorldStore(initialWorld ?? demoSnapshot(0)), [initialWorld]);
   const world = useWorld(store);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export function App({ source: providedSource, initialWorld }: { source?: WorldSo
     lookAt(location.position, false, location.kind === 'gold' ? [0, 10, 6] : location.kind === 'copper' ? [0, 8, 10] : undefined);
   }
 
-  return <main className={`app ${night ? 'night' : ''}`}>
+  return <main className={`app ${night ? 'night' : ''} ${live && dockOpen ? 'has-dock' : ''}`}>
     <div className="world-canvas" aria-label="Interactive 3D Alpine mining valley">
       <WorldScene world={world} selectedId={selectedId} onSelect={selectMiner} focus={focus} labels={labels} paused={paused}
         followingId={followingId} inspectedId={inspectedId} onInspect={inspectHome} onPlace={inspectPlace} weather={weather} routes={routes} />
@@ -141,5 +145,6 @@ export function App({ source: providedSource, initialWorld }: { source?: WorldSo
     <footer className="footer"><span><span className="compass">N ↗</span> DRAG TO ORBIT <span className="separator">/</span> SCROLL TO EXPLORE</span><label className="miner-picker">Meet a miner <select aria-label="Select a miner" value={selectedId ?? ''} onChange={e => selectMiner(e.target.value || null)}><option value="">Choose a resident</option>{world.miners.map(miner => <option key={miner.id} value={miner.id}>{miner.name} · {miner.trade}</option>)}</select></label></footer>
     {soundError && <p role="status" className="sound-error">{soundError}</p>}
     <div className="world-caption"><span className="caption-line" /> BUILT ON COPPER. DRAWN TO GOLD.</div>
+    {live && <Dock live={live} selectedId={selectedId} onSelect={id => selectMiner(id)} open={dockOpen} onToggle={() => setDockOpen(o => !o)} />}
   </main>;
 }

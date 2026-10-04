@@ -89,7 +89,8 @@ export const RULES: Rule[] = [
   ]),
 
   // Particular situations
-  rule("hungry-and-empty", and(is("hunger", "high"), is("food", "none")), "farm", VERY_HIGH, 2),
+  // Hungry with no food: grow some, unless the farms are so crowded it's hopeless (then earn and buy).
+  rule("hungry-and-empty", and(is("hunger", "high"), is("food", "none"), not(is("farmPay", "weak"))), "farm", VERY_HIGH, 2),
   rule("shaft-scares-me", and(is("digRisk", "high"), is("boldness", "low")), "dig", NONE, 2),
   rule("deep-is-fine", and(is("boldness", "high"), is("digPay", "close")), "dig", HIGH),
   rule("chase-the-rumour", and(is("rumour", "yes"), is("boldness", "high")), "digGold", VERY_HIGH, 2),
@@ -119,6 +120,12 @@ export const RULES: Rule[] = [
 
 /** How sharply the brain prefers its top action class (smaller = greedier). */
 const CLASS_TEMP = 0.1;
+/**
+ * Most shifts a miner just carries on with the work they were doing, unless they're spent or it's
+ * become really poor. Only the rest reconsider. Partial adjustment like this is what stops the
+ * whole town leaving the farms at once and rushing back (a cobweb cycle).
+ */
+const STICK_CHANCE = 0.6;
 
 export interface FuzzyTrace {
   brain: "fuzzy";
@@ -126,6 +133,8 @@ export interface FuzzyTrace {
   desire: Partial<Record<ActionClass, number>>;
   fired: { rule: string; text: string; strength: number }[];
   chose: string;
+  /** True when the miner simply carried on with last shift's kind of work. */
+  habit?: boolean;
 }
 
 export interface FuzzyDecision {
@@ -160,7 +169,7 @@ export function fuzzyDecide(obs: Observation, rules: Rule[] = RULES): FuzzyDecis
     comfort: me.needs.comfort,
     pay: bestIncome / (mk.costPerDay / 2),
     digRisk: bestBy.get("dig")?.risk ?? 0,
-    rumour: obs.witnessed.some((e) => e.kind === "rumour") ? 1 : 0,
+    rumour: obs.witnessed.some((e) => e.kind === "rumour") || obs.sites.some((s) => s.richStrike) ? 1 : 0,
     shelter: me.home.kind === "rough" ? 0 : me.home.kind === "bunkhouse" ? 0.6 : 1,
     canBuild: bestBy.has("build") ? 1 : 0,
     oreHeld: me.inventory.copperOre,
@@ -182,7 +191,12 @@ export function fuzzyDecide(obs: Observation, rules: Rule[] = RULES): FuzzyDecis
   const available = CLASSES.filter((c) => bestBy.has(c));
   const desire: Partial<Record<ActionClass, number>> = {};
   for (const c of available) desire[c] = res.outputs[c] ?? (c === "rest" ? 0.3 : 0);
-  const cls = softmaxPick(available, (c) => desire[c]!, CLASS_TEMP, rng.next());
+  const prev = lastClass(obs);
+  const keepAtIt =
+    prev !== undefined && WORK.includes(prev) && available.includes(prev) &&
+    me.needs.energy > 0.3 && me.needs.health > 0.4 && (inputs[`${prev}Pay`] ?? 0) >= 0.3 &&
+    rng.next() < STICK_CHANCE;
+  const cls = keepAtIt ? prev! : softmaxPick(available, (c) => desire[c]!, CLASS_TEMP, rng.next());
   const inClass = options.filter((o) => o.cls === cls);
   const top = Math.max(...inClass.map((o) => o.income));
   const chosen = softmaxPick(inClass, (o) => o.income, Math.max(5, Math.abs(top) * 0.15), rng.next());
@@ -197,12 +211,13 @@ export function fuzzyDecide(obs: Observation, rules: Rule[] = RULES): FuzzyDecis
     // Rules behind the chosen action first, then the rest.
     fired: [...res.firings.filter((f) => f.output === cls), ...res.firings.filter((f) => f.output !== cls)].slice(0, 6).map((f) => ({ rule: f.ruleId, text: f.text, strength: f.strength })),
     chose: chosen.label,
+    ...(keepAtIt ? { habit: true } : {}),
   };
   const intent: Intent = {
     action: chosen.action,
     ...plan,
     ...money,
-    reason: why ? `${chosen.label}: ${why.text} (${why.strength.toFixed(2)})` : chosen.label,
+    reason: keepAtIt ? `${chosen.label}: carrying on with the same work` : why ? `${chosen.label}: ${why.text} (${why.strength.toFixed(2)})` : chosen.label,
     trace,
   };
   return { intent, options, chosen, trace };

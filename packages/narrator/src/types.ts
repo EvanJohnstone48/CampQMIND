@@ -25,6 +25,11 @@ export interface MetricInfo {
   /** Plain-language name that fits mid-sentence, e.g. "the gold price". Lower-case. */
   label: string;
   format: MetricFormat;
+  /**
+   * Smallest change worth mentioning, in the metric's own units (e.g. 0.05 for a share).
+   * Stops a metric that sat at zero from raising an alarm when one miner moves it.
+   */
+  minChange?: number;
 }
 
 export type Direction = "up" | "down";
@@ -91,6 +96,11 @@ export interface NarratorSettings {
   /** How many shifts before a change an event can be and still count as a suspect. */
   lookbackRounds: number;
   maxCardsPerRound: number;
+  /**
+   * Cards whose cause is "unclear" need at least this priority (0 to ~1.2; size 6 wobbles = 1).
+   * 0 shows them all. Raising it cuts alarm fatigue from changes nobody can explain.
+   */
+  unclearMinPriority: number;
 }
 
 export const DEFAULT_SETTINGS: NarratorSettings = {
@@ -99,6 +109,7 @@ export const DEFAULT_SETTINGS: NarratorSettings = {
   maxEpisodeRounds: 16,
   lookbackRounds: 3,
   maxCardsPerRound: 2,
+  unclearMinPriority: 0,
 };
 
 /** Fixed scale, strongest first. "almost certainly" needs a counterfactual re-run (not built yet). */

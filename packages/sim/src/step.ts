@@ -147,6 +147,7 @@ export function step(ctx: SimContext, prev: WorldState, inputs: ShiftInputs, opt
   // 9. Hunger, eating, spoilage, rent
   for (const m of state.miners) consume(state, m, intents(m.id), log, tally);
   spoil(state, state.bank, keyedRng(state.seed, s, "spoil", "bank"), tally);
+  spoil(state, state.treasury, keyedRng(state.seed, s, "spoil", "treasury"), tally);
 
   // 10. Bank day-end
   if (isDayEnd) bankDayEnd(state, byId, log, tally);
@@ -365,7 +366,7 @@ function produce(ctx: SimContext, state: WorldState, p: Plan, roster: Record<str
         v.pocket.remaining -= qty;
         if (v.pocket.remaining <= 0) delete v.pocket;
       }
-      v.depth = Math.floor(v.extracted / d.orePerLevel);
+      v.depth = Math.floor(v.extracted / (d.orePerLevel * v.faceScale));
       m.veinYield[v.siteId] = Math.round((rate / Math.max(0.01, crowd * wf)) * 100) / 100;
       give(v.ore === "gold" ? "gold" : "copperOre", qty);
       if (v.extracted >= v.tonnage && !v.exhausted) {
@@ -469,6 +470,7 @@ function runMarkets(state: WorldState, intents: (id: string) => Intent, log: Eve
   const s = state.shift;
   const holders = new Map<string, Holder>(state.miners.map((m) => [m.id, m]));
   holders.set("bank", state.bank);
+  holders.set("treasury", state.treasury);
   const minerById = new Map(state.miners.map((m) => [m.id, m]));
 
   // Escrow: buy orders must be backed by cash, sells by goods. Unbacked orders are trimmed.
@@ -489,6 +491,14 @@ function runMarkets(state: WorldState, intents: (id: string) => Intent, log: Eve
       }
       if (qty > 0) book[o.good].push({ participantId: m.id, side: o.side, qty, limit });
     }
+  }
+  // The soup kitchen stocks up from the valley's own farmers, bidding just under what importing costs.
+  const want = reliefDemand(state);
+  if (want > 0) {
+    const tp = importPrice(state.worldPrices.food, state.dials);
+    const limit = Math.max(1, Math.min(tp - 1, Math.round(state.prices.food.last * 1.1)));
+    const qty = Math.min(want, Math.floor(state.treasury.cash / limit));
+    if (qty > 0) book.food.push({ participantId: "treasury", side: "buy", qty, limit });
   }
   // The bank sells off anything it seized, cheaply.
   for (const g of GOODS) {
@@ -670,28 +680,61 @@ function updateNeeds(state: WorldState, m: MinerState, worked: boolean, log: Eve
   } else if (m.collapsed && n.health >= 0.5) m.collapsed = false;
 }
 
+function needsRelief(m: MinerState, d: WorldState["dials"]): boolean {
+  return m.needs.nourishment < 0.4 && m.inventory.food === 0 && m.cash < d.reliefCashThreshold;
+}
+
+/** How much food the soup kitchen wants to buy at this shift's market (it stocks up for tonight). */
+export function reliefDemand(state: WorldState): number {
+  const d = state.dials;
+  const likely = state.miners.filter((m) => m.needs.nourishment < 0.6 && m.inventory.food === 0 && m.cash < d.reliefCashThreshold).length;
+  return Math.max(0, likely * d.reliefRations - state.treasury.inventory.food);
+}
+
 /**
- * The soup kitchen: hungry, nearly broke miners get rations the treasury imports for them.
- * Food, not cash, so no brain (however poor) can let a miner starve into a death spiral.
+ * The soup kitchen: hungry, nearly broke miners get rations. Food, not cash, so no brain (however
+ * poor) can let a miner starve into a death spiral. The kitchen hands out what it bought from the
+ * valley's own farmers at market first (keeping the money in the valley), and imports only the
+ * shortfall. In lean times the town borrows from the bank to keep it open.
  */
 function poorRelief(state: WorldState, log: EventLog, tally: Tally): void {
   const d = state.dials;
   const price = importPrice(state.worldPrices.food, d);
   const helped: string[] = [];
   let rations = 0;
+  let imported = 0;
+  let borrowed = 0;
   for (const m of state.miners) {
-    if (m.needs.nourishment < 0.4 && m.inventory.food === 0 && m.cash < d.reliefCashThreshold) {
-      const q = Math.min(d.reliefRations, Math.floor(state.treasury.cash / price));
-      if (q <= 0) break;
-      destroy(state, state.treasury, "cash", q * price);
-      create(state, m, "food", q);
-      tally.imports.food += q;
-      tally.importSpend += q * price;
-      helped.push(m.id);
-      rations += q;
+    if (!needsRelief(m, d)) continue;
+    let q = Math.min(d.reliefRations, state.treasury.inventory.food);
+    if (q > 0) transfer(state.treasury, m, "food", q);
+    const short = d.reliefRations - q;
+    if (short > 0) {
+      const gap = short * price - state.treasury.cash;
+      if (gap > 0) {
+        const floor = Math.ceil(d.freezeReserveFraction * state.bank.initialReserves);
+        const loan = Math.max(0, Math.min(gap, state.bank.cash - floor));
+        if (loan > 0) {
+          transfer(state.bank, state.treasury, "cash", loan);
+          state.treasuryDebt += loan;
+          borrowed += loan;
+        }
+      }
+      const bought = Math.min(short, Math.floor(state.treasury.cash / price));
+      if (bought > 0) {
+        destroy(state, state.treasury, "cash", bought * price);
+        create(state, m, "food", bought);
+        tally.imports.food += bought;
+        tally.importSpend += bought * price;
+        imported += bought;
+        q += bought;
+      }
     }
+    if (q <= 0) break;
+    helped.push(m.id);
+    rations += q;
   }
-  if (helped.length) log.emit({ kind: "poor-relief", actors: helped, data: { miners: helped.length, rations, cost: rations * price }, causes: ["dial:reliefRations"] });
+  if (helped.length) log.emit({ kind: "poor-relief", actors: helped, data: { miners: helped.length, rations, imported, borrowed }, causes: ["dial:reliefRations"] });
 }
 
 function wealthTax(state: WorldState): void {
@@ -705,6 +748,16 @@ function wealthTax(state: WorldState): void {
 
 /** A tenth of the treasury above its reserve is shared equally each day, so rent and levies flow back. */
 function townDividend(state: WorldState): void {
+  // Pay back soup-kitchen credit first, from anything above half the reserve.
+  if (state.treasuryDebt > 0) {
+    const spare = state.treasury.cash - Math.floor(state.dials.treasuryReserve / 2);
+    const repay = Math.max(0, Math.min(state.treasuryDebt, spare));
+    if (repay > 0) {
+      transfer(state.treasury, state.bank, "cash", repay);
+      state.treasuryDebt -= repay;
+    }
+    if (state.treasuryDebt > 0) return;
+  }
   const excess = state.treasury.cash - state.dials.treasuryReserve;
   if (excess <= 0 || !state.miners.length) return;
   const each = Math.floor((excess * 0.1) / state.miners.length);

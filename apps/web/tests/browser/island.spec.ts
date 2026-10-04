@@ -10,7 +10,7 @@ test('island renders, a resident can be selected, playback pauses, and night arr
   test.setTimeout(75000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/?demo');
   await expect(page.getByRole('heading', { name: 'Motherlode', exact: true })).toBeVisible();
   await expect(page.locator('canvas')).toBeVisible();
   await expect(page.locator('.population strong')).toHaveText('100');
@@ -79,7 +79,7 @@ test('island renders, a resident can be selected, playback pauses, and night arr
 test('weather, building selection and bounded camera remain interactive', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/?demo');
   await page.getByRole('button', { name: 'Pause world' }).click();
   await expect(page.getByRole('combobox', { name: 'Select a chalet' }).locator('option')).toHaveCount(25);
   await page.getByRole('combobox', { name: 'Select a chalet' }).selectOption('home-23');
@@ -118,7 +118,7 @@ test('weather, building selection and bounded camera remain interactive', async 
 
 test('mobile view keeps controls on-screen, and places can be explored', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/?demo');
   await page.getByRole('button', { name: 'Pause world' }).click();
   await page.getByRole('button', { name: 'Goldpeak mine' }).click();
   await page.waitForTimeout(1100);
@@ -135,7 +135,7 @@ test('mobile view keeps controls on-screen, and places can be explored', async (
 test('the town can be viewed from every side and both mines stay accessible', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/?demo');
   await page.getByRole('button', { name: 'Pause world' }).click();
   await page.getByRole('combobox', { name: 'Weather', exact: true }).selectOption('clear');
   for (let side = 0; side < 4; side++) {

@@ -14,6 +14,7 @@ const vein = (over: Partial<VeinState> = {}): VeinState => ({
   hardness0: 1,
   depth: 0,
   supportedDepth: 0,
+  faceScale: 1,
   exhausted: false,
   ...over,
 });
