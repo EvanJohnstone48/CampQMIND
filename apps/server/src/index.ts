@@ -46,6 +46,15 @@ const http = createServer((req, res) => {
     const miners = world.state.miners.map((m) => minerPublic(world.state, m));
     return send(200, { town: town.name, headToHead: compareBrains(miners), llm: town.llmStats() ?? null });
   }
+  if (req.url === "/" || req.url === "") {
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.end(`<!doctype html><title>Motherlode server</title><body style="font-family:sans-serif;max-width:560px;margin:60px auto;line-height:1.6">
+<h2>The Motherlode world server is running</h2>
+<p>This is the server the 3D valley talks to, not the valley itself. Open the web app at the <b>Local:</b> address Vite printed in your terminal (usually <a href="http://127.0.0.1:5173">http://127.0.0.1:5173</a>, or the next free port).</p>
+<p>Shift ${world.state.shift}, ${world.state.miners.length} miners, brains: ${town.name}.</p>
+<p>Data: <a href="/health">/health</a> · <a href="/snapshot">/snapshot</a> · <a href="/brains">/brains</a> · <a href="/run">/run</a></p></body>`);
+    return;
+  }
   send(404, { error: "not found" });
 });
 
