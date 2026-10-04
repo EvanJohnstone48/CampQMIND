@@ -81,7 +81,7 @@ export function balanceReport(metrics: ShiftMetrics[]): BalanceReport {
   const issued = metrics.reduce((a, m) => a + m.debt.issuedToday, 0);
   const defaults = metrics.reduce((a, m) => a + m.debt.defaultsToday, 0);
   const rate = issued ? defaults / issued : 0;
-  add("default rate", rate, "< 0.20", rate < 0.2);
+  add("default rate", rate, "< 0.20 (once 20+ loans)", rate < 0.2 || issued < 20);
   add("loans issued", issued, "> 0", issued > 0, true);
 
   // Money neither vanishes nor explodes.

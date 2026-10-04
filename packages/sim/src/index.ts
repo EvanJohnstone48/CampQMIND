@@ -16,6 +16,8 @@ export { loadMap, validateMap, travelMatrix, MapError } from "./map";
 export { PLACEHOLDER_MAP } from "./placeholderMap";
 export { defaultPopulation } from "./population";
 export { wellbeing, needUtility, security, netWorth, costOfLivingPerDay, NEED_WEIGHTS, SHELTER, REST_QUALITY } from "./wellbeing";
+export { workFactor, crowdFactor, digRate, caveInChance } from "./production";
+export { exportPrice, importPrice } from "./tradingPost";
 export { clearAuction, type AuctionOrder, type AuctionResult } from "./market";
 export { checkInvariants } from "./books";
 export { observeAll, snapshot, siteViews, jobViews, minerPublic, minerView, witnessedBy } from "./observe";

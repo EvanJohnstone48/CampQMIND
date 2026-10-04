@@ -17,6 +17,8 @@ export interface MinerActivity {
   /** False if the brain's intent was invalid and the miner rested instead. */
   valid: boolean;
   reason?: string;
+  /** Whatever the brain logged about this decision (fuzzy rule firings, the LLM's thought). */
+  trace?: unknown;
 }
 
 /** One participant's fill in a uniform-price auction. "tradingPost" is the outside world. */

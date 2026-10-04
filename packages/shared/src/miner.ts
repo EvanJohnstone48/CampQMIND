@@ -87,4 +87,6 @@ export interface MinerPublic {
   home: HomeKind;
   injured: boolean;
   employerId?: string;
+  /** Which kind of brain drives this miner ("fuzzy", "llm"...), from Lane 2's population. */
+  brain?: string;
 }

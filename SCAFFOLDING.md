@@ -19,7 +19,7 @@ Motherlode has three parts, like a restaurant:
 | `docs/` | The idea (`00-vision.md`) and one short page per lane (`lanes/`) | everyone |
 | `packages/shared/` | The "contract": the shapes of data every lane agrees on (a miner, a vein, a message…) | everyone |
 | `packages/fuzzy/` | A small fuzzy-logic library ("hunger is 0.8 high") | Lane 2 |
-| `packages/agents/` | The miners' brains, personalities and social life | Lane 2 |
+| `packages/agents/` | The miners' brains and personalities | Lane 2 |
 | `packages/agents/src/llm/` | Talking to the AI model (Gemini) | Lane 2 |
 | `packages/sim/` | The world engine: map, rounds, mining, market, bank | Lane 1 |
 | `packages/narrator/` | Watches the data and explains it in plain words, plus the Oracle | Lane 3 |
@@ -30,8 +30,7 @@ Motherlode has three parts, like a restaurant:
 | `apps/web/src/features/world/` | The 3D valley and the beans | Lane 4 |
 | `apps/web/src/features/console/` | Dials, god powers, the top bar, the timeline | Lane 4 |
 | `apps/web/src/features/economy/` | Charts | Lane 4 |
-| `apps/web/src/features/society/` | The friendship and guild network | Lane 2 |
-| `apps/web/src/features/agents/` | The list of miners | Lane 2 |
+| `apps/web/src/features/agents/` | The list of miners and what they're thinking | Lane 2 |
 | `apps/web/src/features/narrator/` | The explanation cards and the accuracy audit | Lane 3 |
 | `fixtures/` | Recordings of a run,to test the website without the real server | Lane 1 |
 | `runs/` | Logs from real runs (not saved to git) | — |

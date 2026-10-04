@@ -6,15 +6,18 @@
 //   pnpm sim balance [--seeds 5] [--shifts 2000]
 //   pnpm sim fixture [--seed demo] [--shifts 80] [--out fixtures/demo.ndjson]
 //   pnpm sim map-check path/to/map.json
-// Every command takes --map path/to/map.json to use Lane 4's map instead of the placeholder.
+// Every command takes --map path/to/map.json to use Lane 4's map instead of the placeholder,
+// and --brains fuzzy|baseline (default fuzzy: Lane 2's town; baseline: the sim's simple reference brain).
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { OverseerAction, ServerMessage, ShiftMetrics, WorldMap } from "@motherlode/shared";
+import type { Brain, MinerSeed, OverseerAction, ServerMessage, ShiftMetrics, WorldMap } from "@motherlode/shared";
+import { fuzzyBrain, generatePopulation } from "@motherlode/agents";
 import {
   DIAL_DEFS,
   PLACEHOLDER_MAP,
   balanceReport,
+  baselineBrain,
   createWorld,
   hashState,
   minerPublic,
@@ -57,8 +60,10 @@ function cmdRun(): number {
   const shifts = num("shifts", 500);
   const population = num("pop", 100);
   const t0 = Date.now();
-  const { log } = recordRun(loadMapFlag(), { seed, population }, {
+  const town = brains(seed, population);
+  const { log } = recordRun(loadMapFlag(), { seed, population: town.population }, {
     shifts,
+    brain: town.brain,
     onShift: (r) => {
       if (r.shift % 100 === 0) process.stderr.write(`  shift ${r.shift}\r`);
     },
@@ -128,7 +133,8 @@ function cmdBalance(): number {
   for (let i = 0; i < seeds; i++) {
     const seed = `balance-${i}`;
     const t0 = Date.now();
-    const { log } = recordRun(map, { seed, population: num("pop", 100) }, { shifts });
+    const town = brains(seed, num("pop", 100));
+    const { log } = recordRun(map, { seed, population: town.population }, { shifts, brain: town.brain });
     const report = balanceReport(log.metrics);
     allPass &&= report.pass;
     const failed = report.checks.filter((c) => !c.pass && !c.soft);
@@ -148,15 +154,17 @@ function cmdFixture(): number {
   const shifts = num("shifts", 80);
   const out = str("out", "fixtures/demo.ndjson");
   const map = loadMapFlag();
-  const { ctx, state: start } = createWorld({ seed, map });
+  const town = brains(seed, 100);
+  const { ctx, state: start } = createWorld({ seed, map, population: town.population });
   const plan: Record<number, OverseerAction[]> = {
     [Math.floor(shifts * 0.25)]: [{ type: "actOfGod", kind: "goldRush" }],
     [Math.floor(shifts * 0.5)]: [{ type: "godPower", kind: "lightning", minerId: start.miners[0].id }],
     [Math.floor(shifts * 0.75)]: [{ type: "actOfGod", kind: "earthquake" }],
   };
   const lines: ServerMessage[] = [{ type: "hello", map, dialDefs: DIAL_DEFS, snapshot: snapshot(ctx, start), status: { paused: false, roundMs: 3000, shift: 0 } }];
-  recordRun(map, { seed, population: 100 }, {
+  recordRun(map, { seed, population: town.population }, {
     shifts,
+    brain: town.brain,
     plan,
     onShift: (record, _inputs, state) => {
       lines.push({
@@ -198,6 +206,13 @@ function printSummary(metrics: ShiftMetrics[]): void {
         `   ${m.hungryFrac.toFixed(2).padStart(6)}  ${m.meanWellbeing.toFixed(3).padStart(10)}  ${m.gini.toFixed(2)} ${String(m.money.total).padStart(7)} ${String(m.debt.total).padStart(6)}  ${m.housedFrac.toFixed(2)}`,
     );
   }
+}
+
+function brains(seed: string, count: number): { population: MinerSeed[] | number; brain: Brain } {
+  const kind = str("brains", "fuzzy");
+  if (kind === "baseline") return { population: count, brain: baselineBrain };
+  if (kind !== "fuzzy") console.warn(`Unknown --brains "${kind}" (the CLI can run fuzzy or baseline; LLM miners need the live server). Using fuzzy.`);
+  return { population: generatePopulation(seed, count, 0), brain: fuzzyBrain };
 }
 
 function loadMapFlag(): WorldMap {

@@ -220,6 +220,7 @@ export function createWorld(config: WorldConfig): { ctx: SimContext; state: Worl
   const seeds =
     Array.isArray(config.population) ? config.population : defaultPopulation(seed, config.population ?? 100);
   const bunk = map.sites.find((s) => s.kind === "bunkhouse")!.id;
+  const startRng = (id: string, n = 0) => keyedRng(seed, "start-needs", id, n);
 
   const miners: MinerState[] = [...seeds]
     .sort((a, b) => cmp(a.id, b.id))
@@ -231,7 +232,8 @@ export function createWorld(config: WorldConfig): { ctx: SimContext; state: Worl
       ...(p.traits ? { traits: p.traits } : {}),
       location: bunk,
       destination: bunk,
-      needs: { nourishment: 0.8, energy: 0.9, shelter: 0.6, health: 1, security: 0.4, comfort: 0.3 },
+      // Staggered start, so the town doesn't tire and rest in lockstep.
+      needs: { nourishment: startRng(p.id).range(0.6, 1), energy: startRng(p.id, 1).range(0.4, 1), shelter: 0.6, health: 1, security: 0.4, comfort: 0.3 },
       wellbeing: 0,
       social: 0,
       homeKind: "bunkhouse" as HomeKind,

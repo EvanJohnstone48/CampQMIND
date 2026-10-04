@@ -187,6 +187,7 @@ export function minerPublic(state: WorldState, m: MinerState): MinerPublic {
     home: m.homeKind,
     injured: m.collapsed || state.shift < m.injuredUntilShift,
     employerId: job?.employerId,
+    brain: typeof m.traits?.brain === "string" ? m.traits.brain : undefined,
   };
 }
 

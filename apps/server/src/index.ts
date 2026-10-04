@@ -3,6 +3,7 @@
 //   pnpm dev:server            (settings from .env: PORT, SEED, POPULATION, ROUND_MS, MAP, BRAINS)
 //
 // HTTP:  GET /health   GET /snapshot   GET /run (the run so far, replayable with `pnpm sim replay`)
+//        GET /brains (fuzzy vs LLM head-to-head, and LLM usage and cost)
 // WS:    see ServerMessage / ClientMessage in @motherlode/shared
 
 import { createServer } from "node:http";
@@ -10,20 +11,24 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { ClientMessage, ServerMessage, WorldMap } from "@motherlode/shared";
-import { PLACEHOLDER_MAP, snapshot } from "@motherlode/sim";
-import { pickBrains } from "./brains";
+import { compareBrains } from "@motherlode/agents";
+import { PLACEHOLDER_MAP, minerPublic, snapshot } from "@motherlode/sim";
+import { pickTown } from "./brains";
 import { LiveWorld } from "./liveWorld";
 
 const root = resolve(import.meta.dirname, "../../..");
 loadEnv(resolve(root, ".env"));
 
 const PORT = Number(process.env.PORT ?? 8787);
+const SEED = process.env.SEED || "demo";
+const town = pickTown(process.env, SEED, Number(process.env.POPULATION || 100));
 const world = new LiveWorld({
-  seed: process.env.SEED || "demo",
-  population: Number(process.env.POPULATION ?? 100),
+  seed: SEED,
+  population: town.population,
   roundMs: Number(process.env.ROUND_MS ?? 3000),
   map: process.env.MAP ? (JSON.parse(readFileSync(resolve(root, process.env.MAP), "utf8")) as WorldMap) : PLACEHOLDER_MAP,
-  brains: pickBrains(process.env.BRAINS),
+  brains: town.brains,
+  syncBrain: town.syncBrain,
 });
 
 const http = createServer((req, res) => {
@@ -34,6 +39,10 @@ const http = createServer((req, res) => {
   if (req.url === "/health") return send(200, { ok: true, ...world.status() });
   if (req.url === "/snapshot") return send(200, snapshot(world.ctx, world.state));
   if (req.url === "/run") return send(200, world.runLog());
+  if (req.url === "/brains") {
+    const miners = world.state.miners.map((m) => minerPublic(world.state, m));
+    return send(200, { town: town.name, headToHead: compareBrains(miners), llm: town.llmStats() ?? null });
+  }
   send(404, { error: "not found" });
 });
 
@@ -87,7 +96,7 @@ async function loop(): Promise<void> {
 }
 
 http.listen(PORT, () => {
-  console.log(`Motherlode server on http://localhost:${PORT} (ws on the same port), seed "${world.state.seed}", ${world.state.miners.length} miners`);
+  console.log(`Motherlode server on http://localhost:${PORT} (ws on the same port), seed "${world.state.seed}", ${world.state.miners.length} miners, brains: ${town.name}`);
   void loop();
 });
 

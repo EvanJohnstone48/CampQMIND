@@ -121,6 +121,7 @@ export function step(ctx: SimContext, prev: WorldState, inputs: ShiftInputs, opt
       output: Object.keys(p.output).length ? p.output : undefined,
       valid: p.valid,
       reason: p.reason ?? intents(m.id).reason,
+      trace: intents(m.id).trace,
     });
   }
 

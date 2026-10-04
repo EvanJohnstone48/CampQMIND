@@ -23,6 +23,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@motherlode/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@motherlode/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -32,6 +35,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@motherlode/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@motherlode/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -45,6 +51,20 @@ importers:
       '@types/ws':
         specifier: ^8.18.2
         version: 8.18.2
+
+  packages/agents:
+    dependencies:
+      '@motherlode/fuzzy':
+        specifier: workspace:*
+        version: link:../fuzzy
+      '@motherlode/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@motherlode/sim':
+        specifier: workspace:*
+        version: link:../sim
+
+  packages/fuzzy: {}
 
   packages/shared: {}
 

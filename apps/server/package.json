@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@motherlode/agents": "workspace:*",
     "@motherlode/shared": "workspace:*",
     "@motherlode/sim": "workspace:*",
     "ws": "^8.22.0"

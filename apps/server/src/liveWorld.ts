@@ -3,8 +3,10 @@
 // and the Overseer's queued actions.
 
 import type {
+  Brain,
   ClientMessage,
   Intent,
+  MinerSeed,
   OverseerAction,
   ServerMessage,
   ServerStatus,
@@ -34,9 +36,14 @@ const SNAPSHOT_EVERY = 10;
 export interface LiveWorldOptions {
   seed: string;
   map: WorldMap;
-  population: number;
+  population: number | MinerSeed[];
   roundMs: number;
   brains: BrainProvider;
+  /**
+   * A synchronous, repeatable brain for Oracle forks and for miners whose brain answers too late
+   * (default: the sim's baseline). LLM miners are approximated by it in forks.
+   */
+  syncBrain?: Brain;
   /** Max time to wait for brains each shift; late miners fall back to the baseline brain. */
   brainBudgetMs?: number;
 }
@@ -76,7 +83,8 @@ export class LiveWorld {
     try {
       const obs = observeAll(this.ctx, this.state);
       const intents = await withBudget(this.opts.brains(obs, this.state), this.opts.brainBudgetMs ?? Math.max(500, this.roundMs * 0.8));
-      for (const m of this.state.miners) if (!intents[m.id]) intents[m.id] = baselineBrain(obs[m.id]);
+      const fallback = this.opts.syncBrain ?? baselineBrain;
+      for (const m of this.state.miners) if (!intents[m.id]) intents[m.id] = fallback(obs[m.id]);
       const inputs: ShiftInputs = { intents: intents as Record<string, Intent>, overseer: this.queued };
       this.queued = [];
       const { state, record } = step(this.ctx, this.state, inputs);
@@ -112,7 +120,7 @@ export class LiveWorld {
         return { broadcast: { type: "reverted", snapshot: snapshot(this.ctx, this.state) } };
       case "fork": {
         const shifts = Math.max(1, Math.min(500, Math.floor(msg.shifts)));
-        const res = forkCompare(this.ctx, this.state, shifts, msg.actions);
+        const res = forkCompare(this.ctx, this.state, shifts, msg.actions, this.opts.syncBrain ?? baselineBrain);
         return { reply: { type: "forkResult", requestId: msg.requestId, baseline: res.baseline, variant: res.variant } };
       }
       default:
