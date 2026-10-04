@@ -61,6 +61,16 @@ test('the live valley: world, minds, narrator and the Overseer all connected', a
   await console_.getByRole('button', { name: 'Open the full dashboard' }).first().click();
   const dash = page.getByRole('dialog', { name: 'Valley dashboard' });
   await expect(dash.locator('.chart')).toHaveCount(16);
+  // Any chart can be explained on request: what it is, what happened, and why (templates here, no Gemini key).
+  await expect(dash.getByRole('button', { name: 'Explain this' })).toHaveCount(16);
+  const food = dash.locator('.chart').filter({ hasText: 'Food price' }).first();
+  await food.getByRole('button', { name: 'Explain this' }).click();
+  const why = food.locator('.chart-why');
+  await expect(why.getByRole('heading', { name: 'What is this?' })).toBeVisible();
+  await expect(why).toContainText('outside world');
+  await expect(why).toContainText('written from the data');
+  await food.getByRole('button', { name: 'Hide' }).click();
+  await expect(why).toHaveCount(0);
   await expect(dash.locator('.tg-node')).toHaveCount(50);
   await dash.getByRole('button', { name: 'Close dashboard' }).click();
 

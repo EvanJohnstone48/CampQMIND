@@ -25,6 +25,22 @@ export interface NarratorCard {
   writtenBy: "template" | "llm";
 }
 
+/** A plain-language explanation of one dashboard chart, made on request. */
+export interface ChartExplanation {
+  chart: string;
+  title: string;
+  /** What the chart is and what drives it, in everyday words. */
+  whatItShows: string;
+  /** How the line moved over the period. */
+  whatHappened: string;
+  /** Cause and effect, one step per line. */
+  why: string[];
+  fromShift: number;
+  toShift: number;
+  /** "llm" when Gemini worded it (and every number checked out); "template" otherwise. */
+  writtenBy: "llm" | "template";
+}
+
 /** Full picture of the world, sent on connect and after a revert. */
 export interface WorldSnapshot {
   seed: string;
@@ -60,6 +76,7 @@ export type ServerMessage =
   | { type: "status"; status: ServerStatus }
   | { type: "reverted"; snapshot: WorldSnapshot; cards: NarratorCard[] }
   | { type: "forkResult"; requestId: string; baseline: ShiftMetrics[]; variant: ShiftMetrics[] }
+  | { type: "explanation"; requestId: string; chart: string; explanation?: ChartExplanation; error?: string }
   | { type: "error"; message: string };
 
 export type ClientMessage =
@@ -70,4 +87,6 @@ export type ClientMessage =
   /** Go back to the world as it was at the END of this shift; later history is discarded. */
   | { type: "revert"; toShift: number }
   /** Ask the Oracle-style question: run forward N shifts with and without these actions. */
-  | { type: "fork"; requestId: string; shifts: number; actions: OverseerAction[] };
+  | { type: "fork"; requestId: string; shifts: number; actions: OverseerAction[] }
+  /** Ask the narrator to explain one dashboard chart in plain words (uses Gemini when the server has a key). */
+  | { type: "explain"; requestId: string; chart: string };

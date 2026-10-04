@@ -38,7 +38,7 @@ export function Dock({ live, selectedId, onSelect, open, onToggle }: {
       </div>}
       {state.error && <p className="dock-error" role="status">{state.error}</p>}
     </aside>
-    {full && <Dashboard state={state} selectedId={selectedId} onSelect={onSelect} onClose={() => setFull(false)} />}
+    {full && <Dashboard state={state} selectedId={selectedId} onSelect={onSelect} onClose={() => setFull(false)} onExplain={live.explain} />}
   </>;
 }
 

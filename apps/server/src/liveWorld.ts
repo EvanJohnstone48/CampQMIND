@@ -4,6 +4,7 @@
 
 import type {
   Brain,
+  ChartExplanation,
   ClientMessage,
   Intent,
   MinerSeed,
@@ -60,6 +61,8 @@ export interface NarratorHook {
   push(record: ShiftRecord): Promise<NarratorCard[]>;
   cards(): NarratorCard[];
   rewind(shift: number): void;
+  /** Plain-language explanation of one dashboard chart (Gemini when available). */
+  explainChart?(chart: string, dials: Record<string, number>): Promise<ChartExplanation>;
 }
 
 export class LiveWorld {
@@ -125,7 +128,7 @@ export class LiveWorld {
   }
 
   /** Handles a browser command. Returns messages for the sender and for everyone. */
-  handle(msg: ClientMessage): { reply?: ServerMessage; broadcast?: ServerMessage } {
+  handle(msg: ClientMessage): { reply?: ServerMessage; broadcast?: ServerMessage; later?: Promise<ServerMessage> } {
     switch (msg.type) {
       case "overseer":
         this.queued.push(msg.action);
@@ -147,8 +150,22 @@ export class LiveWorld {
         const res = forkCompare(this.ctx, this.state, shifts, msg.actions, this.opts.syncBrain ?? baselineBrain);
         return { reply: { type: "forkResult", requestId: msg.requestId, baseline: res.baseline, variant: res.variant } };
       }
+      case "explain":
+        return { later: this.explain(msg.requestId, msg.chart) };
       default:
         return { reply: { type: "error", message: `unknown message type "${(msg as { type?: string }).type}"` } };
+    }
+  }
+
+  /** Answers an "explain" request. Never rejects: failures come back as an explanation message with an error. */
+  async explain(requestId: string, chart: string): Promise<ServerMessage> {
+    const narrator = this.opts.narrator;
+    if (!narrator?.explainChart) return { type: "explanation", requestId, chart, error: "This server has no narrator to explain charts." };
+    try {
+      const explanation = await narrator.explainChart(chart, this.state.dials);
+      return { type: "explanation", requestId, chart, explanation };
+    } catch (err) {
+      return { type: "explanation", requestId, chart, error: (err as Error).message };
     }
   }
 

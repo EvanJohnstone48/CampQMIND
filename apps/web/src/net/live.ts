@@ -4,6 +4,7 @@
 
 import { useSyncExternalStore } from 'react';
 import type {
+  ChartExplanation,
   ClientMessage,
   DialDef,
   MinerActivity,
@@ -31,6 +32,12 @@ export interface ForkResult {
   variant: ShiftMetrics[];
 }
 
+/** The narrator's answer for one dashboard chart. */
+export type ChartAnswer =
+  | { status: 'loading'; requestId: string }
+  | { status: 'done'; explanation: ChartExplanation }
+  | { status: 'error'; error: string };
+
 export interface LiveState {
   connection: Connection;
   status?: ServerStatus;
@@ -49,6 +56,8 @@ export interface LiveState {
   events: WorldEvent[];
   cards: NarratorCard[];
   forks: ForkResult[];
+  /** Chart explanations, by chart id. Only made when someone asks. */
+  explanations: Record<string, ChartAnswer>;
   error?: string;
 }
 
@@ -67,6 +76,8 @@ export interface LiveConnection {
   send(msg: ClientMessage): void;
   overseer(action: OverseerAction): void;
   fork(label: string, shifts: number, actions: OverseerAction[]): void;
+  /** Ask the narrator why a dashboard chart looks the way it does. */
+  explain(chart: string): void;
   close(): void;
 }
 
@@ -75,7 +86,7 @@ export function useLive(live: LiveConnection): LiveState {
 }
 
 export function connectLive(url: string, WS: typeof WebSocket = WebSocket): LiveConnection {
-  let state: LiveState = { connection: 'connecting', brains: '', dialDefs: [], dials: {}, shift: 0, day: 0, miners: [], activities: [], sites: [], metrics: [], events: [], cards: [], forks: [] };
+  let state: LiveState = { connection: 'connecting', brains: '', dialDefs: [], dials: {}, shift: 0, day: 0, miners: [], activities: [], sites: [], metrics: [], events: [], cards: [], forks: [], explanations: {} };
   const listeners = new Set<() => void>();
   const set = (patch: Partial<LiveState>) => {
     state = { ...state, ...patch };
@@ -87,6 +98,12 @@ export function connectLive(url: string, WS: typeof WebSocket = WebSocket): Live
   let closed = false;
   let retry: ReturnType<typeof setTimeout> | undefined;
 
+  function failPending(error: string) {
+    const ex = Object.entries(state.explanations);
+    if (!ex.some(([, a]) => a.status === 'loading')) return;
+    set({ explanations: Object.fromEntries(ex.map(([k, a]) => [k, a.status === 'loading' ? { status: 'error', error } : a])) });
+  }
+
   function open() {
     try {
       ws = new WS(url);
@@ -96,6 +113,7 @@ export function connectLive(url: string, WS: typeof WebSocket = WebSocket): Live
     }
     ws.onmessage = (e) => handle(JSON.parse(String(e.data)) as ServerMessage);
     ws.onclose = () => {
+      failPending('Lost the connection to the server. Try again once it reconnects.');
       if (closed) return;
       set({ connection: 'offline' });
       retry = setTimeout(open, 3000);
@@ -139,6 +157,12 @@ export function connectLive(url: string, WS: typeof WebSocket = WebSocket): Live
       case 'forkResult':
         set({ forks: [{ requestId: msg.requestId, label: forkLabels.get(msg.requestId) ?? 'What if', baseline: msg.baseline, variant: msg.variant }, ...state.forks].slice(0, 5) });
         return;
+      case 'explanation': {
+        const now = state.explanations[msg.chart];
+        if (now?.status !== 'loading' || now.requestId !== msg.requestId) return;
+        set({ explanations: { ...state.explanations, [msg.chart]: msg.explanation ? { status: 'done', explanation: msg.explanation } : { status: 'error', error: msg.error ?? 'No explanation came back.' } } });
+        return;
+      }
       case 'error':
         set({ error: msg.message });
         return;
@@ -196,6 +220,15 @@ export function connectLive(url: string, WS: typeof WebSocket = WebSocket): Live
     },
     send,
     overseer: (action) => send({ type: 'overseer', action }),
+    explain(chart) {
+      if (ws?.readyState !== WS.OPEN) {
+        set({ explanations: { ...state.explanations, [chart]: { status: 'error', error: 'Explanations need the live server, and it is not connected right now.' } } });
+        return;
+      }
+      const requestId = `x${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      set({ explanations: { ...state.explanations, [chart]: { status: 'loading', requestId } } });
+      send({ type: 'explain', requestId, chart });
+    },
     fork(label, shifts, actions) {
       const requestId = `q${Date.now().toString(36)}`;
       forkLabels.set(requestId, label);

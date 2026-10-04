@@ -4,7 +4,8 @@
 // Every entry in MOTHERLODE_CONFIG is backed by a rule in packages/sim (or Lane 2's fuzzy rules),
 // noted beside it. Don't add a link the code doesn't enforce: that's how a narrator starts lying.
 
-import type { ShiftRecord, WorldEvent as SimEvent } from "@motherlode/shared";
+import type { ChartExplanation, ShiftRecord, WorldEvent as SimEvent } from "@motherlode/shared";
+import { ChartExplainer } from "./charts.js";
 import { createNarrator, type NarratorOptions } from "./narrator.js";
 import type { Card, NarratorConfig, RoundSnapshot, WorldEvent } from "./types.js";
 
@@ -228,6 +229,7 @@ export class LiveNarrator {
   private all: Card[] = [];
   private narrator;
   private readonly options: NarratorOptions;
+  private readonly charts = new ChartExplainer();
 
   constructor(options: NarratorOptions = {}, private readonly config: NarratorConfig = MOTHERLODE_CONFIG) {
     this.options = { ...options, settings: { ...LIVE_SETTINGS, ...options.settings } };
@@ -235,6 +237,7 @@ export class LiveNarrator {
   }
 
   async push(record: ShiftRecord): Promise<Card[]> {
+    this.charts.push(record);
     const snap = toRoundSnapshot(record);
     this.raw.push(snap);
     if (this.raw.length > SMOOTH_WINDOW) this.raw.shift();
@@ -252,11 +255,17 @@ export class LiveNarrator {
     return [...this.all];
   }
 
+  /** Explains one dashboard chart in plain words; the model words it only if every number checks out. */
+  explainChart(chart: string, dials: Record<string, number>): Promise<ChartExplanation> {
+    return this.charts.explain(chart, { dials, cards: this.all, llm: this.options.llm, onProblem: this.options.onProblem });
+  }
+
   /** Forget everything after `shift` (the world was rewound). Card gating restarts too. */
   rewind(shift: number): void {
     this.history = this.history.filter((h) => h.round <= shift);
     this.raw = this.raw.filter((h) => h.round <= shift);
     this.all = this.all.filter((c) => c.round <= shift);
+    this.charts.rewind(shift);
     this.narrator = createNarrator(this.config, this.options);
   }
 }

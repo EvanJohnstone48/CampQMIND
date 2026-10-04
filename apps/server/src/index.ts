@@ -82,9 +82,10 @@ wss.on("connection", (ws) => {
       return sendTo(ws, { type: "error", message: "messages must be JSON" });
     }
     try {
-      const { reply, broadcast: all } = world.handle(msg);
+      const { reply, broadcast: all, later } = world.handle(msg);
       if (reply) sendTo(ws, reply);
       if (all) broadcast(all);
+      if (later) void later.then((m) => sendTo(ws, m));
     } catch (err) {
       sendTo(ws, { type: "error", message: (err as Error).message });
     }
