@@ -59,6 +59,7 @@ export const MOTHERLODE_CONFIG: NarratorConfig = {
     { event: "earthquake", metric: "caveIns", direction: "up" }, //         quake multiplies cave-in odds (production.ts)
     { event: "forestFire", metric: "forest", direction: "down" }, //        burns forest stock (overseer.ts)
     { event: "drought", metric: "foodOutput", direction: "down" }, //       halves farm yield (production.ts)
+    { event: "goldRush", metric: "digging", direction: "up" }, //          a richer vein raises dig pay, so more miners dig (fuzzyBrain.ts "digPay is best")
     { event: "boon", metric: "money", direction: "up" }, //                 boons mint coins (overseer.ts)
     { event: "priceShock", metric: "copperPrice" }, //                      moves the Trading Post's world price
     { event: "priceShock", metric: "goldPrice" },
@@ -106,6 +107,13 @@ export const MOTHERLODE_CONFIG: NarratorConfig = {
     { from: "foodPrice", fromDirection: "down", to: "farming", direction: "down" },
     { from: "timberPrice", fromDirection: "up", to: "chopping", direction: "up" },
     { from: "timberPrice", fromDirection: "down", to: "chopping", direction: "down" },
+    { from: "goldPrice", fromDirection: "up", to: "digging", direction: "up" },
+    { from: "goldPrice", fromDirection: "down", to: "digging", direction: "down" },
+    // The outside world is the only buyer of gold, so gold dug is gold sold (tradingPost.ts).
+    { from: "goldOutput", fromDirection: "up", to: "goldSold", direction: "up" },
+    // Metal sold to the outside world is the valley's main way to earn coins (step.ts market settlement).
+    { from: "goldSold", fromDirection: "up", to: "money", direction: "up" },
+    { from: "copperSold", fromDirection: "up", to: "money", direction: "up" },
     { from: "copperPrice", fromDirection: "up", to: "digging", direction: "up" },
     { from: "copperPrice", fromDirection: "down", to: "digging", direction: "down" },
   ],

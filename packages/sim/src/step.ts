@@ -33,7 +33,7 @@ import {
   unsupportedDepth,
   workFactor,
 } from "./production";
-import { TRADING_POST_ID, driftWorldPrice, importPrice, tradingPostOrders } from "./tradingPost";
+import { TRADING_POST_ID, driftWorldPrice, exportPrice, importPrice, tradingPostOrders } from "./tradingPost";
 import { REST_QUALITY, SHELTER, clamp01, costOfLivingPerDay, netWorth, security, wellbeing } from "./wellbeing";
 import {
   cmp,
@@ -510,7 +510,10 @@ function runMarkets(state: WorldState, intents: (id: string) => Intent, log: Eve
     const orders = [...book[g], ...tradingPostOrders(g, state.worldPrices[g], state.dials)];
     const prevPrice = state.prices[g].last;
     const result = clearAuction(orders, prevPrice, keyedRng(state.seed, s, "auction", g));
-    state.prices[g] = { last: result.price, volume: result.volume, bestBid: result.bestBid, bestAsk: result.bestAsk };
+    // Nobody sold metal this shift: quote what the outside world would pay now, so a price shock
+    // shows up at once instead of waiting for the next sale.
+    const quote = result.volume === 0 && (g === "copper" || g === "gold") ? exportPrice(g, state.worldPrices[g], state.dials) : result.price;
+    state.prices[g] = { last: quote, volume: result.volume, bestBid: result.bestBid, bestAsk: result.bestAsk };
     if (result.volume === 0) continue;
 
     const price = result.price;
