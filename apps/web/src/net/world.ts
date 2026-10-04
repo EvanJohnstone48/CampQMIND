@@ -20,6 +20,11 @@ export interface MinerView {
   color: string;
   homeId?: string;
   route?: readonly Point[];
+  /**
+   * Optional smooth movement: walk `route` from `start` (performance.now() ms) over `duration` ms.
+   * The renderer follows it every frame, so beans glide instead of hopping between snapshots.
+   */
+  motion?: { route: readonly Point[]; start: number; duration: number };
 }
 export interface BuildingView {
   id: string;

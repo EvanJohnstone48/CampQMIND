@@ -27,12 +27,16 @@ export const MOTHERLODE_CONFIG: NarratorConfig = {
     hungry: { label: "the share of hungry miners", format: "share", minChange: 0.05 },
     roughSleepers: { label: "the share sleeping rough", format: "share", minChange: 0.05 },
     digging: { label: "the share of miners digging", format: "share", minChange: 0.08 },
+    farming: { label: "the share of miners farming", format: "share", minChange: 0.08 },
+    chopping: { label: "the share of miners chopping", format: "share", minChange: 0.06 },
     forest: { label: "the forest left standing", format: "share", minChange: 0.04 },
     wellbeing: { label: "average well-being", format: "number", minChange: 0.05 },
     money: { label: "money in the valley", format: "coins", minChange: 4000 },
     debt: { label: "total debt", format: "coins", minChange: 800 },
     bankRate: { label: "the bank's interest rate", format: "number", minChange: 0.004 },
     gini: { label: "wealth inequality", format: "number", minChange: 0.05 },
+    copperSold: { label: "copper sold per shift", format: "count", minChange: 3 },
+    goldSold: { label: "gold sold per shift", format: "count", minChange: 1 },
   },
   eventLabels: {
     goldRush: "gold rush",
@@ -75,10 +79,34 @@ export const MOTHERLODE_CONFIG: NarratorConfig = {
   knownLinks: [
     // Selling more gold in a shift walks down the Trading Post's demand tiers (tradingPost.ts).
     { from: "goldOutput", fromDirection: "up", to: "goldPrice", direction: "down" },
+    // In a uniform-price auction against the Trading Post's fixed tiers, more sold means a lower or
+    // equal clearing price, and less sold a higher or equal one (market.ts + tradingPost.ts).
+    { from: "copperSold", fromDirection: "up", to: "copperPrice", direction: "down" },
+    { from: "copperSold", fromDirection: "down", to: "copperPrice", direction: "up" },
+    { from: "goldSold", fromDirection: "up", to: "goldPrice", direction: "down" },
+    { from: "goldSold", fromDirection: "down", to: "goldPrice", direction: "up" },
+    // With demand unchanged, a smaller harvest or cut can only raise the clearing price (market.ts).
+    { from: "foodOutput", fromDirection: "down", to: "foodPrice", direction: "up" },
+    { from: "timberOutput", fromDirection: "down", to: "timberPrice", direction: "up" },
     // Chop yield scales with the square root of the forest left (production.ts).
     { from: "forest", fromDirection: "down", to: "timberOutput", direction: "down" },
-    // Every shift's digging is the miners who chose to dig (step.ts).
+    // Output is the work miners chose to do (step.ts).
     { from: "digging", fromDirection: "up", to: "oreOutput", direction: "up" },
+    { from: "digging", fromDirection: "down", to: "oreOutput", direction: "down" },
+    { from: "farming", fromDirection: "up", to: "foodOutput", direction: "up" },
+    { from: "farming", fromDirection: "down", to: "foodOutput", direction: "down" },
+    { from: "chopping", fromDirection: "up", to: "timberOutput", direction: "up" },
+    { from: "chopping", fromDirection: "down", to: "timberOutput", direction: "down" },
+    // More supply with demand unchanged can only lower the clearing price (market.ts).
+    { from: "foodOutput", fromDirection: "up", to: "foodPrice", direction: "down" },
+    { from: "timberOutput", fromDirection: "up", to: "timberPrice", direction: "down" },
+    // Lane 2's rules send miners to whatever pays best ("<work>Pay is best" in fuzzyBrain.ts).
+    { from: "foodPrice", fromDirection: "up", to: "farming", direction: "up" },
+    { from: "foodPrice", fromDirection: "down", to: "farming", direction: "down" },
+    { from: "timberPrice", fromDirection: "up", to: "chopping", direction: "up" },
+    { from: "timberPrice", fromDirection: "down", to: "chopping", direction: "down" },
+    { from: "copperPrice", fromDirection: "up", to: "digging", direction: "up" },
+    { from: "copperPrice", fromDirection: "down", to: "digging", direction: "down" },
   ],
   levers: [
     { metric: "hungry", direction: "up", text: "raise the soup kitchen's rations" },
@@ -158,12 +186,16 @@ export function toRoundSnapshot(record: ShiftRecord): RoundSnapshot {
       hungry: m.hungryFrac,
       roughSleepers: m.roughSleepersFrac,
       digging: m.activity.dig / pop,
+      farming: m.activity.farm / pop,
+      chopping: m.activity.chop / pop,
       forest: m.forestFraction,
       wellbeing: m.meanWellbeing,
       money: m.money.total,
       debt: m.debt.total,
       bankRate: m.debt.ratePerDay,
       gini: m.gini,
+      copperSold: m.volume.copper,
+      goldSold: m.volume.gold,
     },
     events: record.events.map(events).filter((e): e is WorldEvent => !!e),
     ruleFirings,
@@ -175,11 +207,16 @@ export function toRoundSnapshot(record: ShiftRecord): RoundSnapshot {
  * change jobs. Like any plant signal, they're filtered before analysis: a 4-shift moving average.
  * Stocks and prices are passed through as-is.
  */
-export const SMOOTHED_METRICS = ["foodOutput", "timberOutput", "oreOutput", "goldOutput", "caveIns", "digging", "hungry", "roughSleepers"];
+// Prices too: copper and gold clear on the Trading Post's price steps, so they jump between steps shift to shift.
+export const SMOOTHED_METRICS = ["foodOutput", "timberOutput", "oreOutput", "goldOutput", "caveIns", "digging", "hungry", "roughSleepers", "farming", "chopping", "foodPrice", "timberPrice", "copperPrice", "goldPrice", "copperSold", "goldSold"];
 const SMOOTH_WINDOW = 4;
 
-/** Live defaults: "cause unclear" cards only for big changes (about 5 wobbles), to avoid alarm fatigue. */
-export const LIVE_SETTINGS = { unclearMinPriority: 0.84 };
+/**
+ * Live defaults: the feed only shows changes the narrator can explain. "Cause unclear" cards (priority
+ * tops out at 1.2 with a confident cause, 1.0 without) are hidden; set unclearMinPriority to 1 to show
+ * only the biggest unexplained changes, or 0 to show them all.
+ */
+export const LIVE_SETTINGS = { unclearMinPriority: 1.01 };
 
 /**
  * The narrator for a live world: feed it each shift's record, get that shift's new cards.

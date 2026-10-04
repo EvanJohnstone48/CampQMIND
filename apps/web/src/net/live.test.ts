@@ -57,7 +57,10 @@ describe('live connection', () => {
     const res = step(ctx, state, { intents: decideAll(ctx, state, fuzzyBrain), overseer: [{ type: 'setDial', key: 'interestRate', value: 0.02 }] });
     const card = { id: 'c1', round: 0, topic: 'gold', startRound: 0, headline: 'Gold is up', statements: [], confidence: 'likely', priority: 1, evidence: [], writtenBy: 'template' as const };
     FakeSocket.last.push({ type: 'shift', update: { ...res.record, miners: res.state.miners.map(m => minerPublic(res.state, m)), sites: siteViews(ctx, res.state), jobs: jobViews(res.state), cards: [card] } });
-    vi.advanceTimersByTime(1500); // past the walking part of the shift
+    // Mid-walk: every miner has a route to follow smoothly, frame by frame.
+    vi.advanceTimersByTime(500);
+    expect(views.at(-1)!.miners.every(m => m.motion && m.motion.route.length >= 1)).toBe(true);
+    vi.advanceTimersByTime(2000); // past the walking part of the shift (75% of 3s)
     const s = live.getState();
     expect(s.shift).toBe(1);
     expect(s.cards).toHaveLength(1);

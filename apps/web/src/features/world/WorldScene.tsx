@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, Line, OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import type { BuildingView, MinerView, Place, Point, WorldView } from '../../net/world';
+import { pointOnRoute } from '../../net/world';
 import { AlpineLandscape } from './AlpineLandscape';
 import { hash, terrainHeight, walkHeight } from './landscape';
 import { boundedPoint, OVERVIEW } from './camera';
@@ -259,9 +260,12 @@ function Bean({ miner, selected, elapsed, onSelect, paused }: { miner: MinerView
   useEffect(() => () => { document.body.style.cursor = ''; }, []);
   useFrame((_, dt) => {
     if (!ref.current) return;
-    const target = new THREE.Vector3(miner.position[0], walkHeight(...miner.position), miner.position[1]);
+    // Follow the walk every frame when we have one, so movement is smooth between snapshots.
+    const m = miner.motion;
+    const [px, pz] = m ? pointOnRoute(m.route, Math.min(1, (performance.now() - m.start) / m.duration)) : miner.position;
+    const target = new THREE.Vector3(px, walkHeight(px, pz), pz);
     const distance = target.distanceTo(last.current);
-    if (distance > 0.02) {
+    if (distance > 0.003) {
       heading.current = Math.atan2(target.x - last.current.x, target.z - last.current.z);
     }
     ref.current.rotation.y += Math.atan2(Math.sin(heading.current - ref.current.rotation.y), Math.cos(heading.current - ref.current.rotation.y)) * Math.min(dt * 8, 1);
@@ -391,7 +395,12 @@ function Atmosphere({ hour, weather }: { hour: number; weather: WeatherView }) {
   </>;
 }
 
-function CameraRig({ focus, following }: { focus: Focus; following?: MinerView }) {
+/** The opening flight: from high above the clouds down to the valley overview. */
+const INTRO_FROM = [OVERVIEW.position[0] * 0.6, 165, OVERVIEW.position[2] * 0.6] as const;
+const INTRO_MS = 4200;
+
+function CameraRig({ focus, following, intro }: { focus: Focus; following?: MinerView; intro?: boolean }) {
+  const flight = useRef<{ start: number } | null>(intro ? { start: -1 } : null);
   const controls = useRef<ElementRef<typeof OrbitControls>>(null);
   const { camera, size, gl } = useThree();
   const targetPosition = useRef<THREE.Vector3 | null>(null);
@@ -418,6 +427,22 @@ function CameraRig({ focus, following }: { focus: Focus; following?: MinerView }
   }, [focus, following?.id]);
   useFrame((_, dt) => {
     if (!controls.current) return;
+    if (flight.current) {
+      // Ease down through the cloud layer; orbit limits are lifted until we arrive.
+      if (flight.current.start < 0) flight.current.start = performance.now();
+      const t = Math.min(1, (performance.now() - flight.current.start) / INTRO_MS);
+      const e = 1 - Math.pow(1 - t, 3);
+      controls.current.maxDistance = 1000;
+      camera.position.set(
+        INTRO_FROM[0] + (OVERVIEW.position[0] - INTRO_FROM[0]) * e,
+        INTRO_FROM[1] + (OVERVIEW.position[1] - INTRO_FROM[1]) * e,
+        INTRO_FROM[2] + (OVERVIEW.position[2] - INTRO_FROM[2]) * e,
+      );
+      controls.current.target.set(...OVERVIEW.target);
+      controls.current.update();
+      if (t >= 1) { flight.current = null; controls.current.maxDistance = 78; }
+      return;
+    }
     const blend = 1 - Math.exp(-dt * 4);
     if (following) {
       const [x, z] = following.position;
@@ -461,16 +486,18 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
   render() { return this.state.failed ? <div className="scene-error"><h2>The valley couldn’t open</h2><p>This view needs WebGL. Enable browser graphics acceleration, then reload.</p></div> : this.props.children; }
 }
 
-export function WorldScene({ world, selectedId, onSelect, focus, labels, paused, followingId, inspectedId, onInspect, onPlace, weather, routes }: {
+export function WorldScene({ world, selectedId, onSelect, focus, labels, paused, followingId, inspectedId, onInspect, onPlace, weather, routes, intro }: {
   world: WorldView; selectedId: string | null; onSelect: (id: string | null) => void; focus: Focus; labels: boolean; paused: boolean;
   followingId: string | null; inspectedId: string | null; onInspect: (id: string) => void; onPlace: (id: string) => void;
   weather: WeatherView; routes: boolean;
+  /** Open with a flight down from above the clouds. */
+  intro?: boolean;
 }) {
   const night = world.hour < 6 || world.hour >= 19;
   const selected = world.miners.find(m => m.id === selectedId);
   const following = world.miners.find(m => m.id === followingId);
   const route = selected?.route?.map(([x, z]) => [x, walkHeight(x, z) + 0.16, z] as [number, number, number]);
-  return <SceneBoundary><Canvas shadows dpr={[1, 1.5]} camera={{ position: [...OVERVIEW.position], fov: OVERVIEW.fov, near: 0.1, far: 650 }}
+  return <SceneBoundary><Canvas shadows dpr={[1, 1.5]} camera={{ position: intro ? [...INTRO_FROM] : [...OVERVIEW.position], fov: OVERVIEW.fov, near: 0.1, far: 650 }}
     gl={{ antialias: true, powerPreference: 'high-performance' }} onPointerMissed={() => onSelect(null)} fallback={<div className="scene-error">Your browser needs WebGL to show the valley.</div>}>
     <Atmosphere hour={world.hour} weather={weather} /><AlpineLandscape elapsed={world.elapsed} />
     <Neighborhood homes={world.buildings ?? []} night={night} selectedId={inspectedId} onInspect={onInspect} />
@@ -483,6 +510,6 @@ export function WorldScene({ world, selectedId, onSelect, focus, labels, paused,
     </group>)}
     {routes && route && route.length > 1 && <Line points={route} color="#ffe0a0" lineWidth={3} transparent opacity={0.85} raycast={noRaycast} />}
     {world.miners.map(miner => <Bean key={miner.id} miner={miner} selected={miner.id === selectedId} elapsed={world.elapsed} onSelect={onSelect} paused={paused} />)}
-    <Clouds elapsed={world.elapsed} weather={weather} /><Precipitation weather={weather} elapsed={world.elapsed} /><CameraRig focus={focus} following={following} />
+    <Clouds elapsed={world.elapsed} weather={weather} /><Precipitation weather={weather} elapsed={world.elapsed} /><CameraRig focus={focus} following={following} intro={intro} />
   </Canvas></SceneBoundary>;
 }

@@ -50,6 +50,8 @@ export interface LiveWorldOptions {
   narrator?: NarratorHook;
   /** Shown to browsers, e.g. "agents (fuzzy)". */
   brainsLabel?: string;
+  /** Wait for a viewer to press play before the first shift. */
+  startPaused?: boolean;
   /** Max time to wait for brains each shift; late miners fall back to the baseline brain. */
   brainBudgetMs?: number;
 }
@@ -77,6 +79,7 @@ export class LiveWorld {
     this.state = state;
     this.start = state;
     this.roundMs = opts.roundMs;
+    this.paused = opts.startPaused ?? false;
     this.snapshots.set(0, state);
   }
 

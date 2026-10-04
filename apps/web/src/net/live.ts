@@ -56,6 +56,8 @@ export interface LiveState {
 const NOTABLE = new Set(['act-of-god', 'god-power', 'dial-changed', 'rumour', 'credit-freeze', 'credit-thaw', 'vein-exhausted', 'forest-depleted', 'house-complete', 'loan-default', 'collapse']);
 
 const SPEEDS: Record<number, number> = { 1: 3000, 4: 750, 12: 250 };
+/** Share of a shift spent walking to the next job; the rest is spent working there. */
+const WALK_SHARE = 0.75;
 
 export interface LiveConnection {
   /** Feeds Lane 4's 3D view. */
@@ -258,16 +260,24 @@ class Motion {
     this.roundMs = roundMs;
   }
 
-  /** Walk during the first ~40% of a shift, then stay put (working or resting). */
+  /** Walk during the first ~75% of a shift, then stay put (working or resting). */
+  private walkMs() {
+    return this.roundMs * WALK_SHARE;
+  }
+
   position(id: string, now: number): Point | undefined {
     const leg = this.to.get(id);
     if (!leg) return undefined;
-    const f = Math.min(1, (now - this.shiftAt) / (this.roundMs * 0.4));
-    return pointOnRoute(leg.route, f);
+    return pointOnRoute(leg.route, Math.min(1, (now - this.shiftAt) / this.walkMs()));
+  }
+
+  motion(id: string): MinerView['motion'] {
+    const leg = this.to.get(id);
+    return leg ? { route: leg.route, start: this.shiftAt, duration: this.walkMs() } : undefined;
   }
 
   arrived(now: number): boolean {
-    return now - this.shiftAt >= this.roundMs * 0.4;
+    return now - this.shiftAt >= this.walkMs();
   }
 
   siteName(id: string, map?: WorldMap) {
@@ -297,6 +307,7 @@ function toWorldView(s: LiveState, motion: Motion, now: number, clock: number): 
       trade: m.injured ? 'Villager' : action === 'rest' ? 'Villager' : TRADES[action] ?? 'Villager',
       activity: describe(m, a, s.map, walking),
       position: motion.position(m.id, now) ?? homeDoor(m),
+      motion: motion.motion(m.id),
       destinationId: place,
       working: action !== 'rest' && !walking,
       color: m.look ? `hsl(${m.look.hue} 42% 62%)` : '#cf9c68',
@@ -361,3 +372,10 @@ function jitter(p: Point, id: string): Point {
 }
 
 export const DEFAULT_SERVER_URL = 'ws://127.0.0.1:8787';
+
+const noLive = () => () => {};
+const nothing = () => undefined;
+/** Like useLive, but for components that also run without a server (the demo). */
+export function useLiveMaybe(live?: LiveConnection): LiveState | undefined {
+  return useSyncExternalStore(live?.subscribe ?? noLive, live?.getState ?? nothing, live?.getState ?? nothing);
+}

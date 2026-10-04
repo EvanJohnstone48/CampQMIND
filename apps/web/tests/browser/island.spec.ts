@@ -3,18 +3,36 @@ import { PerspectiveCamera, Vector3 } from 'three';
 import { demoSnapshot } from '../../src/net/demo';
 import { walkHeight } from '../../src/features/world/landscape';
 import { ACTIVE_BOUNDS, OVERVIEW } from '../../src/features/world/camera';
+import type { Page } from '@playwright/test';
+
+/** Press play on the intro and wait for the camera to land and the controls to appear. */
+async function enter(page: Page) {
+  await page.goto('/?demo');
+  await page.getByRole('button', { name: 'Enter the valley' }).click();
+  await expect(page.locator('.stats-pill')).toBeVisible();
+  await page.waitForTimeout(5200);
+}
+/** The time, weather and camera controls live in a box that opens on click. */
+async function openTime(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Show time and weather' });
+  if (await toggle.count()) await toggle.click();
+}
+/** Fly to a place or home from the small Explore menu. */
+async function explore(page: Page, name: string) {
+  await page.locator('.explore-pill').click();
+  await page.getByRole('menuitem', { name, exact: true }).click();
+}
 
 test('island renders, a resident can be selected, playback pauses, and night arrives', async ({ page }) => {
   // This full walkthrough includes audio, tracking, inspection and a real clock
   // transition; software WebGL takes longer than the individual scene checks.
-  test.setTimeout(75000);
+  test.setTimeout(120000);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/?demo');
-  await expect(page.getByRole('heading', { name: 'Motherlode', exact: true })).toBeVisible();
+  await enter(page);
   await expect(page.locator('canvas')).toBeVisible();
-  await expect(page.locator('.population strong')).toHaveText('100');
-  await expect(page.getByRole('combobox', { name: 'Select a miner' }).locator('option')).toHaveCount(101);
+  await expect(page.locator('.stats-pill b').first()).toHaveText('100');
+  await openTime(page);
   await expect(page.getByText('The valley couldn’t open')).toHaveCount(0);
   await page.getByRole('button', { name: 'Pause world' }).click();
   const time = await page.getByRole('progressbar').getAttribute('aria-valuenow');
@@ -31,7 +49,9 @@ test('island renders, a resident can be selected, playback pauses, and night arr
   const screen = new Vector3(resident.position[0], walkHeight(...resident.position) + 0.67, resident.position[1] + 0.25).project(camera);
   await page.mouse.click((screen.x + 1) * 720, (1 - screen.y) * 450);
   await expect(page.getByRole('complementary', { name: 'Selected miner' })).toBeVisible();
-  await page.getByRole('combobox', { name: 'Select a miner' }).selectOption('demo-0');
+  // Meet Ada through her chalet (the miner picker is now the homes list).
+  await explore(page, 'Birch chalet 1');
+  await page.locator('.resident-list button').filter({ hasText: /^Ada/ }).click();
   await expect(page.getByRole('complementary', { name: 'Selected miner' })).toContainText('Ada');
   await expect(page.getByRole('complementary', { name: 'Selected miner' })).toContainText('Miner');
   await page.getByRole('button', { name: 'Take a closer look' }).click();
@@ -79,15 +99,17 @@ test('island renders, a resident can be selected, playback pauses, and night arr
 test('weather, building selection and bounded camera remain interactive', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/?demo');
+  await enter(page);
   await page.getByRole('button', { name: 'Pause world' }).click();
-  await expect(page.getByRole('combobox', { name: 'Select a chalet' }).locator('option')).toHaveCount(25);
-  await page.getByRole('combobox', { name: 'Select a chalet' }).selectOption('home-23');
+  await openTime(page);
+  await page.locator('.explore-pill').click();
+  await expect(page.locator('.explore-homes button')).toHaveCount(24);
+  await page.getByRole('menuitem', { name: 'Alder chalet 4', exact: true }).click();
   await expect(page.getByRole('complementary', { name: 'Selected building' })).toContainText('Alder chalet 4');
   await page.waitForTimeout(1000);
   await page.screenshot({ path: 'test-results/island-chalet.png' });
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Riverside works' }).click();
+  await explore(page, 'Riverside works');
   await expect(page.getByRole('complementary', { name: 'Selected building' })).toContainText('28 work spaces');
   await page.waitForTimeout(1000);
   await page.screenshot({ path: 'test-results/island-foundry.png' });
@@ -118,9 +140,10 @@ test('weather, building selection and bounded camera remain interactive', async 
 
 test('mobile view keeps controls on-screen, and places can be explored', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?demo');
+  await enter(page);
   await page.getByRole('button', { name: 'Pause world' }).click();
-  await page.getByRole('button', { name: 'Goldpeak mine' }).click();
+  await openTime(page);
+  await explore(page, 'Goldpeak mine');
   await page.waitForTimeout(1100);
   await page.getByRole('button', { name: 'Reset camera' }).click();
   await page.waitForTimeout(1100);
@@ -135,8 +158,9 @@ test('mobile view keeps controls on-screen, and places can be explored', async (
 test('the town can be viewed from every side and both mines stay accessible', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/?demo');
+  await enter(page);
   await page.getByRole('button', { name: 'Pause world' }).click();
+  await openTime(page);
   await page.getByRole('combobox', { name: 'Weather', exact: true }).selectOption('clear');
   for (let side = 0; side < 4; side++) {
     await page.waitForTimeout(650);
@@ -145,7 +169,7 @@ test('the town can be viewed from every side and both mines stay accessible', as
     await page.mouse.move(945, 450, { steps: 12 }); await page.mouse.up();
   }
   for (const name of ['Copper ridge', 'Goldpeak mine']) {
-    await page.getByRole('button', { name, exact: true }).click();
+    await explore(page, name);
     await expect(page.getByRole('complementary', { name: 'Selected building' })).toContainText(name);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(1200);

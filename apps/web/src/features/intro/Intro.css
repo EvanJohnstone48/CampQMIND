@@ -1,0 +1,25 @@
+.intro-sky { position: fixed; inset: 0; z-index: 100; overflow: hidden; display: grid; place-items: center;
+  background: radial-gradient(ellipse at 50% 120%, #ffffff 0%, #d9efff 28%, #9fd2f7 62%, #6fb6ea 100%); }
+.intro-sky.is-leaving { animation: intro-dive 1.8s cubic-bezier(.55, 0, .25, 1) forwards; pointer-events: none; }
+@keyframes intro-dive { 0% { transform: scale(1); opacity: 1; } 70% { opacity: 0.85; } 100% { transform: scale(3.2); opacity: 0; } }
+.intro-play { width: 84px; height: 84px; border-radius: 50%; border: 0; background: #ffffff; color: #4b9fdb; display: grid; place-items: center;
+  box-shadow: 0 10px 40px #2f78b544, 0 0 0 10px #ffffff40; transition: transform .25s ease, box-shadow .25s ease; animation: intro-breathe 3.2s ease-in-out infinite; z-index: 2; }
+.intro-play svg { margin-left: 5px; }
+.intro-play:hover { transform: scale(1.06); box-shadow: 0 14px 50px #2f78b555, 0 0 0 16px #ffffff40; }
+.intro-play:focus-visible { outline: 3px solid #ffffff; outline-offset: 8px; }
+@keyframes intro-breathe { 0%, 100% { box-shadow: 0 10px 40px #2f78b544, 0 0 0 10px #ffffff40; } 50% { box-shadow: 0 10px 40px #2f78b544, 0 0 0 22px #ffffff22; } }
+.intro-cloud { position: absolute; border-radius: 50%; background: #ffffff; filter: blur(18px); opacity: 0.75; animation: intro-drift linear infinite; }
+.intro-cloud::before, .intro-cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+.intro-cloud::before { width: 60%; height: 120%; left: 15%; top: -45%; }
+.intro-cloud::after { width: 45%; height: 95%; right: 8%; top: -30%; }
+.intro-cloud.c0 { width: 380px; height: 110px; top: 12%; left: -10%; animation-duration: 90s; }
+.intro-cloud.c1 { width: 260px; height: 80px; top: 26%; left: 55%; animation-duration: 120s; opacity: 0.6; }
+.intro-cloud.c2 { width: 480px; height: 140px; top: 70%; left: 10%; animation-duration: 75s; }
+.intro-cloud.c3 { width: 300px; height: 90px; top: 80%; left: 62%; animation-duration: 100s; opacity: 0.85; }
+.intro-cloud.c4 { width: 200px; height: 60px; top: 6%; left: 72%; animation-duration: 140s; opacity: 0.5; }
+.intro-cloud.c5 { width: 340px; height: 100px; top: 45%; left: -20%; animation-duration: 110s; opacity: 0.55; }
+.intro-cloud.c6 { width: 420px; height: 120px; top: 58%; left: 70%; animation-duration: 95s; opacity: 0.7; }
+.intro-cloud.c7 { width: 240px; height: 70px; top: 36%; left: 30%; animation-duration: 160s; opacity: 0.35; }
+.intro-cloud.c8 { width: 600px; height: 170px; top: 88%; left: -15%; animation-duration: 130s; opacity: 0.9; }
+@keyframes intro-drift { from { transform: translateX(0); } to { transform: translateX(40vw); } }
+@media (prefers-reduced-motion: reduce) { .intro-cloud, .intro-play { animation: none; } .intro-sky.is-leaving { animation-duration: 0.4s; } }

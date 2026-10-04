@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { connectLive, DEFAULT_SERVER_URL } from './net/live';
 import './style.css';
+import './layout.css';
 
 // Live by default: connect to the world server (pnpm dev:server). Add ?demo to the URL for Lane 4's
 // self-contained demo. ?server=ws://host:port (or VITE_SERVER_URL at build time) picks the server.

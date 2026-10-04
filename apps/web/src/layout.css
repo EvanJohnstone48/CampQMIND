@@ -1,0 +1,62 @@
+/* Layout for the live valley: small pills in the corners, narrator on the left, console on the right. */
+
+/* Controls appear once the camera has dived down out of the clouds. */
+/* A full-screen, click-through layer above the 3D view (so its labels never cover the panels). */
+.chrome { position: absolute; inset: 0; z-index: 10; pointer-events: none; animation: chrome-in 1s ease 3.6s both; }
+.chrome > :not(.masthead) { pointer-events: auto; }
+@keyframes chrome-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .chrome { animation-delay: 0s; } }
+
+.masthead { top: 22px; left: 24px; right: 24px; }
+
+/* Top left: residents and houses. */
+.stats-pill { position: absolute; top: 24px; left: 24px; z-index: 12; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: 11px; }
+.stats-pill b { font-family: 'Manrope', sans-serif; font-size: 13px; margin-right: 2px; }
+.stats-pill .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.4; }
+
+/* Left: the narrator. */
+.narrator-dock { position: absolute; top: 64px; left: 24px; width: 360px; max-height: calc(100dvh - 130px); z-index: 11; display: flex; flex-direction: column; overflow: hidden; }
+.narrator-dock.is-closed { width: auto; }
+.narrator-dock-head { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border: 0; background: transparent; color: inherit; font-size: 12px; font-weight: 600; text-align: left; }
+.narrator-dock-head .chevron { margin-left: auto; opacity: 0.6; }
+.narrator-dock-body { overflow: auto; padding: 0 8px 8px; }
+.narrator-dock-body .narrator { padding: 4px; gap: 8px; }
+
+/* Right: the console. */
+.dock { top: 64px; right: 24px; bottom: 96px; width: 400px; }
+.dock-tabs .dock-expand { margin-left: auto; font-size: 15px; opacity: 0.7; }
+.dock-tabs .dock-expand + .dock-toggle { margin-left: 0; }
+.dock-more { margin-top: 10px; width: 100%; padding: 7px; border-radius: 8px; border: 1px solid #52674730; background: #fffaf2; color: inherit; font-size: 12px; }
+.app.has-dock .miner-card, .app.has-dock .help-card { right: 440px; top: 64px; }
+
+/* Bottom left: the Explore pill and its menu. */
+.explore { position: absolute; left: 24px; bottom: 24px; z-index: 12; }
+.explore-pill { display: flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 20px; font-size: 11px; color: inherit; cursor: pointer; }
+.explore-menu { position: absolute; left: 0; bottom: calc(100% + 8px); width: 250px; max-height: 60dvh; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 1px; }
+.explore-heading { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.55; padding: 6px 8px 3px; }
+.explore-menu button { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 7px; background: transparent; color: inherit; font-size: 12px; text-align: left; }
+.explore-menu button:hover { background: #ece8d8; }
+.explore-homes { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; }
+.explore-homes button { font-size: 11px; }
+
+/* Bottom right: the time box, folded into a pill until opened. */
+.view-controls { right: 24px; bottom: 24px; }
+.view-controls.is-closed { width: auto; padding: 6px 8px 6px 12px; border-radius: 22px; }
+.view-controls.is-closed .time-heading h3 { font-size: 12px; margin-top: 1px; }
+.time-toggle { display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: inherit; padding: 0; text-align: left; flex: 1; }
+.time-toggle .chevron { opacity: 0.55; font-size: 11px; margin-left: 4px; }
+.view-controls.is-open .time-toggle .chevron { margin-left: auto; }
+
+.night .stats-pill, .night .explore-pill { color: #eee6cf; background: #203c42c0; border-color: #fff4; }
+
+@media (max-width: 1100px) {
+  .narrator-dock { width: 300px; }
+  .dock { width: 340px; }
+  .app.has-dock .miner-card, .app.has-dock .help-card { right: 380px; }
+}
+@media (max-width: 700px) {
+  .narrator-dock { top: 60px; left: 12px; right: 12px; width: auto; max-height: 30dvh; }
+  .dock { top: auto; left: 12px; right: 12px; bottom: 70px; width: auto; height: 38dvh; }
+  .app.has-dock .miner-card { right: 12px; }
+}
+.narrator-learning { font-size: 12px; opacity: 0.7; padding: 4px 6px 0; margin: 0; }

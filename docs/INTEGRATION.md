@@ -20,6 +20,16 @@ Lane 2 brains ──intents──▶ Lane 1 sim (step) ──ShiftRecord──�
 | Browser → 3D view | `apps/web/src/net/live.ts`: maps each shift onto Lane 4's `WorldView`. Miners walk Lane 4's streets to their sites and home to their chalet. With no server it falls back to the local demo. |
 | Panels | `apps/web/src/features/console/Dock.tsx`: Narrator (Lane 3's panel), Miners (Lane 2's Agents tab), Economy, Overseer. |
 
+## What you see
+
+- **Opening:** a clear sky with one play button. The world server starts paused (`START_PAUSED`, default on), and pressing play starts it and dives the camera down through the clouds into the valley.
+- **Top left:** a small pill with the number of residents (50 by default, `POPULATION`) and houses.
+- **Left:** the narrator. By default it only shows changes it can explain (`LIVE_SETTINGS.unclearMinPriority`).
+- **Right:** the Miners, Economy and Overseer tabs. The ⤢ button opens a full-page dashboard with big charts and a town network graph of who is working where.
+- **Bottom left:** an Explore pill listing the six places and every home.
+- **Bottom right:** the time box, which opens on click.
+- Miners walk their routes smoothly, frame by frame (`MinerView.motion`).
+
 ## Run it
 
 ```

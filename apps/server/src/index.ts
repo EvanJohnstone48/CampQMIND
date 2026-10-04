@@ -22,7 +22,7 @@ loadEnv(resolve(root, ".env"));
 
 const PORT = Number(process.env.PORT ?? 8787);
 const SEED = process.env.SEED || "demo";
-const town = pickTown(process.env, SEED, Number(process.env.POPULATION || 100));
+const town = pickTown(process.env, SEED, Number(process.env.POPULATION || 50));
 const world = new LiveWorld({
   seed: SEED,
   population: town.population,
@@ -32,6 +32,8 @@ const world = new LiveWorld({
   syncBrain: town.syncBrain,
   brainsLabel: town.name,
   narrator: makeNarrator(),
+  // The world waits for the viewer to press play (START_PAUSED=false starts it straight away).
+  startPaused: process.env.START_PAUSED !== "false",
 });
 
 const http = createServer((req, res) => {

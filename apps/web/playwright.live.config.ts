@@ -24,7 +24,7 @@ export default defineConfig({
       command: 'pnpm --filter @motherlode/server start',
       cwd: '../..',
       url: `http://127.0.0.1:${LIVE_PORT}/health`,
-      env: { PORT: String(LIVE_PORT), ROUND_MS: '400', SEED: 'e2e', BRAINS: 'agents', GEMINI_API_KEY: '' },
+      env: { PORT: String(LIVE_PORT), ROUND_MS: '400', SEED: 'e2e', BRAINS: 'agents', GEMINI_API_KEY: '', POPULATION: '50' },
       reuseExistingServer: false,
       timeout: 60000,
     },

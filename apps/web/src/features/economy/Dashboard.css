@@ -1,0 +1,47 @@
+.dashboard { position: fixed; inset: 16px; z-index: 60; overflow: auto; padding: 22px 28px 40px; color: #30463b;
+  background: #faf7edf5; border: 1px solid #ffffffa0; border-radius: 18px; box-shadow: 0 20px 80px #283c3030; backdrop-filter: blur(16px);
+  animation: dash-in .25s ease-out; }
+@keyframes dash-in { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+.dash-head { position: sticky; top: -22px; z-index: 2; display: flex; align-items: center; gap: 16px; padding: 6px 0 14px; background: #faf7edf5; }
+.dash-head h2 { font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 700; margin-top: 4px; }
+.dash-brains { font-size: 12px; opacity: 0.6; margin-left: auto; }
+.dash-close { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #52674730; background: #fffaf2; font-size: 14px; color: inherit; }
+.dash-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.kpi { background: #fffaf2; border: 1px solid #52674718; border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; }
+.kpi span { font-size: 11px; opacity: 0.65; }
+.kpi strong { font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi.is-warn strong { color: #a8452f; }
+.dash-section { margin: 22px 0; }
+.dash-section h3 { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; }
+.chart { margin: 0; background: #fffaf2; border: 1px solid #52674718; border-radius: 12px; padding: 10px 12px 8px; }
+.chart figcaption { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.chart svg { width: 100%; height: 170px; display: block; touch-action: none; }
+.chart-grid { stroke: #52674718; }
+.chart-tick { font-size: 11px; fill: #5d7467; }
+.chart-cursor { stroke: #30463b55; stroke-dasharray: 3 3; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; margin-top: 4px; }
+.chart-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.chart-legend b { font-variant-numeric: tabular-nums; }
+.chart-at { opacity: 0.6; margin-left: auto; }
+.chart-empty { font-size: 12px; opacity: 0.6; padding: 40px 0; text-align: center; }
+.town-graph { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; background: #fffaf2; border: 1px solid #52674718; border-radius: 12px; padding: 10px; }
+.town-graph svg { width: 100%; height: auto; display: block; }
+.tg-hub circle { fill: #344c40; }
+.tg-hub text { fill: #f5e2ac; font-size: 13px; font-weight: 700; }
+.tg-hub .tg-hub-label { fill: #30463b; font-size: 12px; font-weight: 600; }
+.tg-node { transition: transform .9s cubic-bezier(.4, 0, .2, 1); cursor: pointer; }
+.tg-node.is-focus circle:first-child { stroke: #111; stroke-width: 2.5; }
+.tg-links line { transition: all .9s cubic-bezier(.4, 0, .2, 1); }
+.tg-side { font-size: 12px; display: flex; flex-direction: column; gap: 14px; }
+.tg-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.tg-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.tg-legend .tg-dash { width: 16px; height: 0; border-top: 2px dashed #7d6aa8; border-radius: 0; }
+.tg-legend .tg-ring { background: none; border: 1.5px solid #c55; }
+.tg-legend .tg-llm { background: #fff; border: 2px solid #4b2fa8; }
+.tg-focus { display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #f3efe2; border-radius: 10px; }
+.tg-focus strong { font-size: 14px; }
+.tg-focus em { opacity: 0.8; }
+.tg-hint { opacity: 0.65; }
+.dash-agents { background: #fffaf2; border: 1px solid #52674718; border-radius: 12px; padding: 12px; height: 520px; }
+@media (max-width: 900px) { .dashboard { inset: 6px; padding: 14px; } .dash-grid { grid-template-columns: 1fr; } .town-graph { grid-template-columns: 1fr; } }
